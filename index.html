@@ -757,7 +757,7 @@ window.doLogin = async () => {
     // A API loginRedirect() do MSAL é bloqueada nesse cenário; loginPopup() é o fluxo correto.
     const loginResp = await msalInstance.loginPopup({
       scopes: DATAVERSE_SCOPE,
-      prompt: 'CONSENT'
+      prompt: 'consent'
     });
 
     const account = loginResp && loginResp.account;
