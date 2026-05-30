@@ -478,8 +478,7 @@ tr:hover td{background:#f9f9fb}
 
 <div class="toast" id="toast"></div>
 
-<!-- MSAL.js — Microsoft Authentication Library -->
-<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+<!-- MSAL.js será carregado dinamicamente com fallback de CDN -->
 <script>
 // ============================================================
 // CONFIGURAÇÃO MICROSOFT — preencha com seus valores
@@ -501,21 +500,85 @@ const TABLES = {
   usuarios:  "pds_usuarios"
 };
 
+// MSAL 2.38.3 no CDN Microsoft retornou 404.
+// Usamos 2.35.0, que é uma versão 2.x estável, com fallback de região e CDN npm.
+const MSAL_CDN_URLS = [
+  "https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js",
+  "https://alcdn.msftauth.net/browser/2.35.0/js/msal-browser.min.js",
+  "https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.35.0/lib/msal-browser.min.js",
+  "https://unpkg.com/@azure/msal-browser@2.35.0/lib/msal-browser.min.js"
+];
+const MSAL_SCRIPT_TIMEOUT_MS = 9000;
+
 // ── Instância MSAL (inicializada antes de qualquer uso) ──────
 let msalInstance = null;
 let msalInitPromise = null;
 let accessToken  = null;
 
+function loadExternalScript(src, timeoutMs = MSAL_SCRIPT_TIMEOUT_MS) {
+  return new Promise((resolve, reject) => {
+    const existing = Array.from(document.scripts).find(s => s.src === src);
+    if (existing && existing.dataset.loaded === 'true') {
+      resolve(src);
+      return;
+    }
+
+    const script = existing || document.createElement('script');
+    let done = false;
+
+    const finish = (ok, detail) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      script.onload = null;
+      script.onerror = null;
+      if (ok) {
+        script.dataset.loaded = 'true';
+        resolve(src);
+      } else {
+        if (!existing && script.parentNode) script.parentNode.removeChild(script);
+        reject(new Error(detail || ('Falha ao carregar ' + src)));
+      }
+    };
+
+    const timer = setTimeout(() => finish(false, 'Tempo excedido ao carregar ' + src), timeoutMs);
+    script.onload = () => finish(true);
+    script.onerror = () => finish(false);
+
+    if (!existing) {
+      script.src = src;
+      script.async = true;
+      script.crossOrigin = 'anonymous';
+      document.head.appendChild(script);
+    }
+  });
+}
+
+async function ensureMsalLoaded() {
+  if (window.msal && window.msal.PublicClientApplication) return window.msal;
+
+  const failures = [];
+  for (const src of MSAL_CDN_URLS) {
+    try {
+      await loadExternalScript(src);
+      if (window.msal && window.msal.PublicClientApplication) return window.msal;
+      failures.push(src + ' carregou, mas não expôs window.msal');
+    } catch (e) {
+      failures.push((e && e.message) ? e.message : String(e));
+      console.warn('Falha ao carregar MSAL:', src, e);
+    }
+  }
+
+  throw new Error('Biblioteca MSAL não foi carregada. Verifique bloqueios de rede/CSP para alcdn.msauth.net, alcdn.msftauth.net, jsdelivr.net ou unpkg.com. Detalhes: ' + failures.join(' | '));
+}
+
 async function initMsal() {
   if (msalInstance) return msalInstance;
 
-  if (typeof msal === 'undefined' || !msal.PublicClientApplication) {
-    throw new Error('Biblioteca MSAL não foi carregada. Verifique a conexão com https://alcdn.msauth.net ou bloqueios de rede/CSP.');
-  }
-
   if (!msalInitPromise) {
     msalInitPromise = (async () => {
-      const app = new msal.PublicClientApplication(MSAL_CONFIG);
+      const msalLib = await ensureMsalLoaded();
+      const app = new msalLib.PublicClientApplication(MSAL_CONFIG);
 
       // MSAL v3 usa initialize(); em algumas versões 2.x esse método não existe.
       if (typeof app.initialize === 'function') {
@@ -679,21 +742,37 @@ window.doLogin = async () => {
   const err = document.getElementById('loginErr');
   const originalHtml = btn.innerHTML;
 
-  btn.innerHTML = '⟳ Redirecionando...';
+  btn.innerHTML = '⟳ Abrindo Microsoft...';
   btn.disabled  = true;
   err.textContent = '';
 
   try {
     await initMsal();
 
-    if (!msalInstance || typeof msalInstance.loginRedirect !== 'function') {
+    if (!msalInstance || typeof msalInstance.loginPopup !== 'function') {
       throw new Error('MSAL não inicializou corretamente. Recarregue a página e tente novamente.');
     }
 
-    await msalInstance.loginRedirect({ scopes: DATAVERSE_SCOPE, prompt: 'select_account' });
+    // GitHub Pages, previews e alguns portais podem abrir este app dentro de iframe.
+    // A API loginRedirect() do MSAL é bloqueada nesse cenário; loginPopup() é o fluxo correto.
+    const loginResp = await msalInstance.loginPopup({
+      scopes: DATAVERSE_SCOPE,
+      prompt: 'select_account'
+    });
+
+    const account = loginResp && loginResp.account;
+    if (!account) throw new Error('Login Microsoft concluído sem conta retornada.');
+
+    msalInstance.setActiveAccount(account);
+    await onLoginSuccess(account, loginResp && loginResp.accessToken);
   } catch(e) {
     console.error('Erro no login Microsoft:', e);
-    err.textContent = 'Erro: ' + (e.message || e);
+    const msg = (e && (e.errorMessage || e.message)) ? (e.errorMessage || e.message) : String(e);
+    if (msg && msg.toLowerCase().includes('popup')) {
+      err.textContent = 'Erro: o pop-up de login foi bloqueado. Libere pop-ups para este site e tente novamente.';
+    } else {
+      err.textContent = 'Erro: ' + msg;
+    }
     btn.innerHTML = originalHtml;
     btn.disabled  = false;
   }
@@ -702,19 +781,41 @@ window.doLogin = async () => {
 window.doLogout = async () => {
   clearInterval(pollTimer);
   await initMsal();
-  await msalInstance.logoutRedirect({ postLogoutRedirectUri: window.location.href });
+
+  try {
+    const account = msalInstance.getActiveAccount && msalInstance.getActiveAccount();
+    if (typeof msalInstance.logoutPopup === 'function') {
+      await msalInstance.logoutPopup({ account, mainWindowRedirectUri: window.location.href });
+    } else {
+      await msalInstance.logoutRedirect({ account, postLogoutRedirectUri: window.location.href });
+    }
+  } catch (e) {
+    console.error('Erro no logout Microsoft:', e);
+  } finally {
+    accessToken = null;
+    currentUser = null;
+    userProfile = null;
+    document.getElementById('appWrap').style.display = 'none';
+    document.getElementById('loginWrap').style.display = 'flex';
+  }
 };
 
-async function onLoginSuccess(account) {
+async function onLoginSuccess(account, initialAccessToken) {
   try {
-    const tokenResp = await msalInstance.acquireTokenSilent({ scopes: DATAVERSE_SCOPE, account });
-    accessToken = tokenResp.accessToken;
+    if (initialAccessToken) {
+      accessToken = initialAccessToken;
+    } else {
+      const tokenResp = await msalInstance.acquireTokenSilent({ scopes: DATAVERSE_SCOPE, account });
+      accessToken = tokenResp.accessToken;
+    }
+
     await carregarDadosIniciais(account);
     iniciarPolling();
     document.getElementById('loginWrap').style.display = 'none';
     document.getElementById('appWrap').style.display   = 'block';
   } catch(e) {
-    document.getElementById('loginErr').textContent = 'Erro ao obter token: ' + e.message;
+    console.error('Erro ao obter token ou carregar dados:', e);
+    document.getElementById('loginErr').textContent = 'Erro ao obter token/carregar dados: ' + (e.message || e);
   }
 }
 
@@ -1402,21 +1503,25 @@ window.showTab=t=>{
   const btn = document.getElementById('loginBtn');
 
   try {
-    if (typeof msal === 'undefined') {
-      throw new Error('Biblioteca MSAL não foi carregada. Verifique a conexão e o script msal-browser.min.js.');
-    }
-
     await initMsal();
 
-    if (!msalInstance || typeof msalInstance.handleRedirectPromise !== 'function') {
+    if (!msalInstance) {
       throw new Error('MSAL não inicializou corretamente.');
     }
 
-    const redirectResp = await msalInstance.handleRedirectPromise();
-    if (redirectResp && redirectResp.account) {
-      msalInstance.setActiveAccount(redirectResp.account);
-      await onLoginSuccess(redirectResp.account);
-      return;
+    // Mantém compatibilidade caso exista um retorno de redirect antigo,
+    // mas o login principal agora usa popup para funcionar dentro de iframes.
+    if (typeof msalInstance.handleRedirectPromise === 'function') {
+      try {
+        const redirectResp = await msalInstance.handleRedirectPromise();
+        if (redirectResp && redirectResp.account) {
+          msalInstance.setActiveAccount(redirectResp.account);
+          await onLoginSuccess(redirectResp.account);
+          return;
+        }
+      } catch (redirectError) {
+        console.warn('Retorno de redirect ignorado; fluxo atual usa popup:', redirectError);
+      }
     }
 
     const accounts = msalInstance.getAllAccounts();
