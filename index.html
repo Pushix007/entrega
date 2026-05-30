@@ -217,7 +217,7 @@ tr:hover td{background:#f9f9fb}
     <div class="login-logo">🚗</div>
     <div class="login-title">Painel PDS</div>
     <div class="login-sub">Preparação de Veículos</div>
-    <button class="login-btn" id="loginBtn" onclick="doLogin()" disabled style="display:flex;align-items:center;justify-content:center;gap:10px;background:#0078d4">
+    <button class="login-btn" id="loginBtn" onclick="doLogin()" style="display:flex;align-items:center;justify-content:center;gap:10px;background:#0078d4">
       <svg width="20" height="20" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect x="1" y="1" width="10" height="10" fill="#F25022"/>
         <rect x="12" y="1" width="10" height="10" fill="#7FBA00"/>
@@ -478,7 +478,8 @@ tr:hover td{background:#f9f9fb}
 
 <div class="toast" id="toast"></div>
 
-<!-- MSAL.js será carregado dinamicamente com fallback de CDN -->
+<!-- MSAL.js — Microsoft Authentication Library -->
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
 <script>
 // ============================================================
 // CONFIGURAÇÃO MICROSOFT — preencha com seus valores
@@ -487,9 +488,16 @@ const MSAL_CONFIG = {
   auth: {
     clientId:    "33346696-9ce1-42aa-8d3a-a36f3f70d8f8",
     authority:   "https://login.microsoftonline.com/7e7117fa-cd8d-41fa-846a-5a4198a0e022",
-    redirectUri: "https://pushix007.github.io/entrega/"
+    redirectUri: "https://pushix007.github.io/entrega/",
+    navigateToLoginRequestUrl: true
   },
-  cache: { cacheLocation: "sessionStorage", storeAuthStateInCookie: false }
+  cache: { cacheLocation: "sessionStorage", storeAuthStateInCookie: false },
+  system: {
+    allowNativeBroker: false,
+    windowHashTimeout: 9000,
+    iframeHashTimeout: 9000,
+    loadFrameTimeout: 9000
+  }
 };
 const DATAVERSE_URL   = "https://orgaa2b7be4.crm2.dynamics.com"; // ⚠ preencha com sua URL do Dataverse
 const DATAVERSE_SCOPE = [DATAVERSE_URL + "/.default"];
@@ -500,101 +508,13 @@ const TABLES = {
   usuarios:  "pds_usuarios"
 };
 
-// MSAL 2.38.3 no CDN Microsoft retornou 404.
-// Usamos 2.35.0, que é uma versão 2.x estável, com fallback de região e CDN npm.
-const MSAL_CDN_URLS = [
-  "https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js",
-  "https://alcdn.msftauth.net/browser/2.35.0/js/msal-browser.min.js",
-  "https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.35.0/lib/msal-browser.min.js",
-  "https://unpkg.com/@azure/msal-browser@2.35.0/lib/msal-browser.min.js"
-];
-const MSAL_SCRIPT_TIMEOUT_MS = 9000;
-
 // ── Instância MSAL (inicializada antes de qualquer uso) ──────
 let msalInstance = null;
-let msalInitPromise = null;
 let accessToken  = null;
 
-function loadExternalScript(src, timeoutMs = MSAL_SCRIPT_TIMEOUT_MS) {
-  return new Promise((resolve, reject) => {
-    const existing = Array.from(document.scripts).find(s => s.src === src);
-    if (existing && existing.dataset.loaded === 'true') {
-      resolve(src);
-      return;
-    }
-
-    const script = existing || document.createElement('script');
-    let done = false;
-
-    const finish = (ok, detail) => {
-      if (done) return;
-      done = true;
-      clearTimeout(timer);
-      script.onload = null;
-      script.onerror = null;
-      if (ok) {
-        script.dataset.loaded = 'true';
-        resolve(src);
-      } else {
-        if (!existing && script.parentNode) script.parentNode.removeChild(script);
-        reject(new Error(detail || ('Falha ao carregar ' + src)));
-      }
-    };
-
-    const timer = setTimeout(() => finish(false, 'Tempo excedido ao carregar ' + src), timeoutMs);
-    script.onload = () => finish(true);
-    script.onerror = () => finish(false);
-
-    if (!existing) {
-      script.src = src;
-      script.async = true;
-      script.crossOrigin = 'anonymous';
-      document.head.appendChild(script);
-    }
-  });
-}
-
-async function ensureMsalLoaded() {
-  if (window.msal && window.msal.PublicClientApplication) return window.msal;
-
-  const failures = [];
-  for (const src of MSAL_CDN_URLS) {
-    try {
-      await loadExternalScript(src);
-      if (window.msal && window.msal.PublicClientApplication) return window.msal;
-      failures.push(src + ' carregou, mas não expôs window.msal');
-    } catch (e) {
-      failures.push((e && e.message) ? e.message : String(e));
-      console.warn('Falha ao carregar MSAL:', src, e);
-    }
-  }
-
-  throw new Error('Biblioteca MSAL não foi carregada. Verifique bloqueios de rede/CSP para alcdn.msauth.net, alcdn.msftauth.net, jsdelivr.net ou unpkg.com. Detalhes: ' + failures.join(' | '));
-}
-
 async function initMsal() {
-  if (msalInstance) return msalInstance;
-
-  if (!msalInitPromise) {
-    msalInitPromise = (async () => {
-      const msalLib = await ensureMsalLoaded();
-      const app = new msalLib.PublicClientApplication(MSAL_CONFIG);
-
-      // MSAL v3 usa initialize(); em algumas versões 2.x esse método não existe.
-      if (typeof app.initialize === 'function') {
-        await app.initialize();
-      }
-
-      msalInstance = app;
-      return app;
-    })().catch(e => {
-      msalInstance = null;
-      msalInitPromise = null;
-      throw e;
-    });
-  }
-
-  return await msalInitPromise;
+  msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
+  await msalInstance.initialize();
 }
 
 // ── API Dataverse ────────────────────────────────────────────
@@ -689,8 +609,6 @@ let pendingConcluida = null;
 let tableSortCol = 'dataEntrega';
 let tableSortAsc = true;
 let unsubVehicles= null;
-const POLL_INTERVAL_MS = 10 * 60 * 1000;
-let pollTimer = null;
 
 // ── TOAST ─────────────────────────────────────────────────────
 window.showToast = (msg,ms=2800)=>{
@@ -704,10 +622,10 @@ const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d;};
 const isoDate=d=>d.toISOString().slice(0,10);
 function parseDate(v){
   if(!v) return null; v=(v+'').trim();
-  if(/^\d{5,}$/.test(v)){const d=new Date(Date.UTC(1899,11,30)+parseInt(v)*86400000);return isNaN(d)?null:d;}
-  const br=v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(/^\\d{5,}$/.test(v)){const d=new Date(Date.UTC(1899,11,30)+parseInt(v)*86400000);return isNaN(d)?null:d;}
+  const br=v.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})$/);
   if(br) return new Date(+br[3],+br[2]-1,+br[1]);
-  const iso=v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const iso=v.match(/^(\\d{4})-(\\d{2})-(\\d{2})/);
   if(iso) return new Date(+iso[1],+iso[2]-1,+iso[3]);
   const d=new Date(v); return isNaN(d)?null:d;
 }
@@ -740,82 +658,33 @@ function setMsg(txt,type=''){const el=document.getElementById('syncMsg');el.text
 window.doLogin = async () => {
   const btn = document.getElementById('loginBtn');
   const err = document.getElementById('loginErr');
-  const originalHtml = btn.innerHTML;
-
-  btn.innerHTML = '⟳ Abrindo Microsoft...';
+  btn.innerHTML = '⟳ Redirecionando...';
   btn.disabled  = true;
   err.textContent = '';
-
   try {
-    await initMsal();
-
-    if (!msalInstance || typeof msalInstance.loginPopup !== 'function') {
-      throw new Error('MSAL não inicializou corretamente. Recarregue a página e tente novamente.');
-    }
-
-    // GitHub Pages, previews e alguns portais podem abrir este app dentro de iframe.
-    // A API loginRedirect() do MSAL é bloqueada nesse cenário; loginPopup() é o fluxo correto.
-    const loginResp = await msalInstance.loginPopup({
-      scopes: DATAVERSE_SCOPE,
-      prompt: 'consent'
-    });
-
-    const account = loginResp && loginResp.account;
-    if (!account) throw new Error('Login Microsoft concluído sem conta retornada.');
-
-    msalInstance.setActiveAccount(account);
-    await onLoginSuccess(account, loginResp && loginResp.accessToken);
+    await msalInstance.loginRedirect({ scopes: DATAVERSE_SCOPE, prompt: 'consent' });
   } catch(e) {
-    console.error('Erro no login Microsoft:', e);
-    const msg = (e && (e.errorMessage || e.message)) ? (e.errorMessage || e.message) : String(e);
-    if (msg && msg.toLowerCase().includes('popup')) {
-      err.textContent = 'Erro: o pop-up de login foi bloqueado. Libere pop-ups para este site e tente novamente.';
-    } else {
-      err.textContent = 'Erro: ' + msg;
-    }
-    btn.innerHTML = originalHtml;
+    err.textContent = 'Erro: ' + e.message;
+    btn.innerHTML = '&#x229E; Entrar com Microsoft';
     btn.disabled  = false;
   }
 };
 
 window.doLogout = async () => {
   clearInterval(pollTimer);
-  await initMsal();
-
-  try {
-    const account = msalInstance.getActiveAccount && msalInstance.getActiveAccount();
-    if (typeof msalInstance.logoutPopup === 'function') {
-      await msalInstance.logoutPopup({ account, mainWindowRedirectUri: window.location.href });
-    } else {
-      await msalInstance.logoutRedirect({ account, postLogoutRedirectUri: window.location.href });
-    }
-  } catch (e) {
-    console.error('Erro no logout Microsoft:', e);
-  } finally {
-    accessToken = null;
-    currentUser = null;
-    userProfile = null;
-    document.getElementById('appWrap').style.display = 'none';
-    document.getElementById('loginWrap').style.display = 'flex';
-  }
+  await msalInstance.logoutRedirect({ postLogoutRedirectUri: window.location.href });
 };
 
-async function onLoginSuccess(account, initialAccessToken) {
+async function onLoginSuccess(account) {
   try {
-    if (initialAccessToken) {
-      accessToken = initialAccessToken;
-    } else {
-      const tokenResp = await msalInstance.acquireTokenSilent({ scopes: DATAVERSE_SCOPE, account });
-      accessToken = tokenResp.accessToken;
-    }
-
+    const tokenResp = await msalInstance.acquireTokenSilent({ scopes: DATAVERSE_SCOPE, account });
+    accessToken = tokenResp.accessToken;
     await carregarDadosIniciais(account);
     iniciarPolling();
     document.getElementById('loginWrap').style.display = 'none';
     document.getElementById('appWrap').style.display   = 'block';
   } catch(e) {
-    console.error('Erro ao obter token ou carregar dados:', e);
-    document.getElementById('loginErr').textContent = 'Erro ao obter token/carregar dados: ' + (e.message || e);
+    document.getElementById('loginErr').textContent = 'Erro ao obter token: ' + e.message;
   }
 }
 
@@ -907,6 +776,7 @@ async function carregarDadosIniciais(account) {
   renderKanban(); renderTable(); renderCalendar();
   setMsg('Conectado ao Dataverse', 'ok');
 }
+});
 
 // ── SELETOR DE LOJA ──────────────────────────────────────────
 function buildLojaSelector(){
@@ -1496,59 +1366,6 @@ window.showTab=t=>{
   if(t==='r')renderRelatorio();
   if(t==='a')renderAdmin();
 };
-
-// ── BOOTSTRAP MSAL ───────────────────────────────────────────
-(async function boot() {
-  const err = document.getElementById('loginErr');
-  const btn = document.getElementById('loginBtn');
-
-  try {
-    await initMsal();
-
-    if (!msalInstance) {
-      throw new Error('MSAL não inicializou corretamente.');
-    }
-
-    // Mantém compatibilidade caso exista um retorno de redirect antigo,
-    // mas o login principal agora usa popup para funcionar dentro de iframes.
-    if (typeof msalInstance.handleRedirectPromise === 'function') {
-      try {
-        const redirectResp = await msalInstance.handleRedirectPromise();
-        if (redirectResp && redirectResp.account) {
-          msalInstance.setActiveAccount(redirectResp.account);
-          await onLoginSuccess(redirectResp.account);
-          return;
-        }
-      } catch (redirectError) {
-        console.warn('Retorno de redirect ignorado; fluxo atual usa popup:', redirectError);
-      }
-    }
-
-    const accounts = msalInstance.getAllAccounts();
-    if (accounts && accounts.length > 0) {
-      const account = msalInstance.getActiveAccount() || accounts[0];
-      msalInstance.setActiveAccount(account);
-      await onLoginSuccess(account);
-    }
-  } catch (e) {
-    console.error('Erro ao inicializar login Microsoft:', e);
-    if (err) err.textContent = 'Erro ao inicializar login: ' + (e.message || e);
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      if (!btn.textContent.includes('Entrar com Microsoft')) {
-        btn.innerHTML = `
-          <svg width="20" height="20" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="1" y="1" width="10" height="10" fill="#F25022"/>
-            <rect x="12" y="1" width="10" height="10" fill="#7FBA00"/>
-            <rect x="1" y="12" width="10" height="10" fill="#00A4EF"/>
-            <rect x="12" y="12" width="10" height="10" fill="#FFB900"/>
-          </svg>
-          Entrar com Microsoft`;
-      }
-    }
-  }
-})();
 
 // ── Login via botão Microsoft (sem campos de texto) ──
 </script>
