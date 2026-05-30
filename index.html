@@ -4,10 +4,6 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>PDS — Painel de Preparação de Veículos</title>
-
-<!-- MSAL.js — Microsoft Authentication Library -->
-<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
-
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f5;color:#1a1a2e;min-height:100vh}
@@ -18,11 +14,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .login-logo{font-size:32px;text-align:center;margin-bottom:6px}
 .login-title{font-size:18px;font-weight:700;text-align:center;color:#1a1a2e;margin-bottom:4px}
 .login-sub{font-size:12px;text-align:center;color:#888;margin-bottom:24px}
-.login-btn{width:100%;padding:12px;background:#0078d4;color:#fff;border:none;border-radius:7px;font-size:14px;font-weight:600;cursor:pointer;margin-top:6px;display:flex;align-items:center;justify-content:center;gap:10px}
-.login-btn:hover{background:#106ebe}
-.login-btn svg{width:20px;height:20px;flex-shrink:0}
+.login-field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.login-field label{font-size:12px;font-weight:600;color:#444}
+.login-field input{padding:9px 12px;border:1.5px solid #d0d0d0;border-radius:7px;font-size:14px;outline:none;transition:border .15s}
+.login-field input:focus{border-color:#1a1a2e}
+.login-btn{width:100%;padding:10px;background:#1a1a2e;color:#fff;border:none;border-radius:7px;font-size:14px;font-weight:600;cursor:pointer;margin-top:6px}
+.login-btn:hover{background:#2e2e4e}
 .login-err{font-size:12px;color:#c62828;text-align:center;margin-top:10px;min-height:18px}
-.login-info{font-size:11px;color:#888;text-align:center;margin-top:16px;line-height:1.6;padding:10px;background:#f5f5f5;border-radius:6px}
+.login-forgot{font-size:12px;color:#1565c0;text-align:center;margin-top:12px;cursor:pointer;text-decoration:underline}
+.recover-box{display:none;background:#fff;border-radius:14px;padding:32px;width:360px;box-shadow:0 8px 40px rgba(0,0,0,.3)}
+.recover-box.open{display:block}
+.recover-back{font-size:12px;color:#888;cursor:pointer;margin-bottom:16px;display:inline-flex;align-items:center;gap:4px}
 
 /* APP */
 #appWrap{display:none}
@@ -33,10 +35,7 @@ header h1{font-size:15px;font-weight:600;letter-spacing:.3px}
 .loja-selector label{font-size:11px;color:rgba(255,255,255,.6)}
 .loja-selector select{font-size:12px;padding:4px 8px;border-radius:6px;border:none;background:rgba(255,255,255,.15);color:#fff;outline:none;cursor:pointer}
 .loja-selector select option{background:#1a1a2e;color:#fff}
-.realtime-badge{font-size:11px;background:#e8f5e9;color:#2e7d32;padding:3px 10px;border-radius:10px;font-weight:600;cursor:pointer;transition:background .2s}
-.realtime-badge:hover{background:#c8e6c9}
-.realtime-badge.syncing{background:#fff8e1;color:#f57f17}
-.last-update{font-size:10px;color:rgba(255,255,255,.5);white-space:nowrap}
+.realtime-badge{font-size:11px;background:#e8f5e9;color:#2e7d32;padding:3px 10px;border-radius:10px;font-weight:600}
 .user-pill{font-size:12px;background:rgba(255,255,255,.12);padding:4px 12px;border-radius:20px;display:flex;align-items:center;gap:6px}
 .nivel-tag{font-size:10px;opacity:.7;text-transform:uppercase;letter-spacing:.4px}
 .logout-btn{font-size:12px;color:rgba(255,255,255,.6);background:none;border:none;cursor:pointer;padding:0}
@@ -94,7 +93,7 @@ button.sm{padding:4px 10px;font-size:11px}
 .b2{background:#FAEEDA;color:#633806}.b3{background:#E1F5EE;color:#085041}
 .b4{background:#EAF3DE;color:#27500A}.b5{background:#FBEAF0;color:#72243E}
 .b6{background:#FCEBEB;color:#791F1F}.b7{background:#d4edda;color:#155724}
-.b8{background:#F3E5F5;color:#6A1B9A}
+.b8{background:#F3E5F5;color:#6A1B9A}.b9{background:#FFF3E0;color:#E65100}
 .btn-parar{font-size:10px;padding:3px 8px;border-radius:4px;cursor:pointer;border:1px solid #b71c1c;background:#ef9a9a;color:#7f0000;margin-top:6px;width:100%;font-weight:600}
 .btn-parar:hover{background:#e57373}
 .btn-retomar{font-size:10px;padding:3px 8px;border-radius:4px;cursor:pointer;border:1px solid #2e7d32;background:#f1f8f1;color:#2e7d32;margin-top:6px;width:100%}
@@ -166,6 +165,7 @@ tr:hover td{background:#f9f9fb}
 .admin-form{display:flex;flex-direction:column;gap:10px}
 .admin-form label{font-size:11px;font-weight:600;color:#555}
 .admin-form input,.admin-form select{padding:7px 10px;border:1px solid #d0d0d0;border-radius:6px;font-size:13px;outline:none;width:100%}
+.admin-form input:focus,.admin-form select:focus{border-color:#1a1a2e}
 .admin-list{margin-top:14px;display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto}
 .admin-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#f9f9fb;border:1px solid #eee;border-radius:6px;font-size:12px}
 .admin-item .item-info{display:flex;flex-direction:column;gap:2px}
@@ -178,10 +178,6 @@ tr:hover td{background:#f9f9fb}
 .checkbox-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
 .checkbox-item{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer}
 .checkbox-item input{width:14px;height:14px;cursor:pointer}
-
-/* INFO BOX */
-.info-box{background:#e3f2fd;border:1px solid #90caf9;border-radius:8px;padding:12px 16px;font-size:12px;color:#0d47a1;margin-bottom:16px;line-height:1.6}
-.info-box strong{font-weight:700}
 
 /* MODAIS */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center}
@@ -198,10 +194,19 @@ tr:hover td{background:#f9f9fb}
 /* TOAST */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:2000;white-space:nowrap}
 .toast.show{opacity:1}
-
-/* SPINNER */
-.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle}
-@keyframes spin{to{transform:rotate(360deg)}}
+/* HISTÓRICO MODAL */
+.btn-historico{font-size:10px;color:#1565c0;background:none;border:none;cursor:pointer;padding:3px 0;text-decoration:underline;margin-top:5px;display:block;font-family:inherit}
+.btn-historico:hover{color:#0d47a1;background:none}
+.hist-modal-table{width:100%;border-collapse:collapse;font-size:12px}
+.hist-modal-table th{font-size:11px;font-weight:600;color:#666;text-align:left;padding:7px 10px;border-bottom:1px solid #eee;background:#fafafa;white-space:nowrap}
+.hist-modal-table td{padding:8px 10px;border-bottom:1px solid #f0f0f0;vertical-align:top;color:#1a1a2e}
+.hist-modal-table tr:last-child td{border-bottom:none}
+/* ETAPA CONCLUÍDA */
+.card.concluida{border-left:4px solid #28a745;background:#f1f8f1}
+.card-concluida-label{font-size:10px;color:#2e7d32;font-weight:700;margin-top:4px}
+.etapa-check-row{display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:7px;border-top:1px solid #f0f0f0}
+.etapa-check-row label{font-size:11px;font-weight:600;color:#555;cursor:pointer;user-select:none}
+.etapa-check-row input[type="checkbox"]{width:14px;height:14px;cursor:pointer;accent-color:#2e7d32}
 </style>
 </head>
 <body>
@@ -212,8 +217,8 @@ tr:hover td{background:#f9f9fb}
     <div class="login-logo">🚗</div>
     <div class="login-title">Painel PDS</div>
     <div class="login-sub">Preparação de Veículos</div>
-    <button class="login-btn" id="loginBtn" onclick="doLogin()">
-      <svg viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <button class="login-btn" id="loginBtn" onclick="doLogin()" style="display:flex;align-items:center;justify-content:center;gap:10px;background:#0078d4">
+      <svg width="20" height="20" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect x="1" y="1" width="10" height="10" fill="#F25022"/>
         <rect x="12" y="1" width="10" height="10" fill="#7FBA00"/>
         <rect x="1" y="12" width="10" height="10" fill="#00A4EF"/>
@@ -222,11 +227,12 @@ tr:hover td{background:#f9f9fb}
       Entrar com Microsoft
     </button>
     <div class="login-err" id="loginErr"></div>
-    <div class="login-info">
+    <div style="font-size:11px;color:#888;text-align:center;margin-top:16px;line-height:1.6;padding:10px;background:#f5f5f5;border-radius:6px">
       Use sua conta corporativa <strong>@suaempresa.com.br</strong><br/>
       O acesso é gerenciado pelo administrador do sistema.
     </div>
   </div>
+
 </div>
 
 <!-- APP -->
@@ -238,8 +244,8 @@ tr:hover td{background:#f9f9fb}
         <label>Loja:</label>
         <select id="lojaSelector" onchange="onLojaChange()"></select>
       </div>
-      <span class="realtime-badge" id="realtimeBadge" onclick="forcarAtualizacao()" title="Clique para atualizar agora">● Ao vivo</span>
-      <span class="last-update" id="lastUpdate">—</span>
+      <span class="realtime-badge" id="realtimeBadge" onclick="forcarAtualizacao()" title="Clique para atualizar agora" style="cursor:pointer">● Ao vivo</span>
+      <span id="lastUpdate" style="font-size:10px;color:rgba(255,255,255,.5);white-space:nowrap">—</span>
       <div class="user-pill"><span id="headerUser"></span><span class="nivel-tag" id="headerNivel"></span></div>
       <button class="logout-btn" onclick="doLogout()">Sair ↩</button>
     </div>
@@ -247,7 +253,7 @@ tr:hover td{background:#f9f9fb}
 
   <div class="main">
     <div class="top-bar">
-      <span class="sync-msg ok" id="syncMsg">Conectado ao Dataverse</span>
+      <span class="sync-msg ok" id="syncMsg">Conectado</span>
       <button class="primary" id="btnNovoVeiculo" onclick="showAddModal()" style="display:none">+ Novo veículo</button>
     </div>
 
@@ -269,15 +275,15 @@ tr:hover td{background:#f9f9fb}
       <div class="table-wrap">
         <table>
           <thead><tr>
-            <th onclick="sortTable('pds_chassi')">Chassi</th>
-            <th onclick="sortTable('pds_modelo')">Modelo</th>
-            <th onclick="sortTable('pds_cor')">Cor</th>
-            <th onclick="sortTable('pds_cliente')">Cliente</th>
-            <th onclick="sortTable('pds_vendedor')">Vendedor</th>
-            <th onclick="sortTable('pds_datainicio')">Início</th>
-            <th onclick="sortTable('pds_status')">Status</th>
-            <th>Tempo</th>
-            <th onclick="sortTable('pds_dataentrega')">Entrega</th>
+            <th onclick="sortTable('chassi')">Chassi <span id="sort-chassi"></span></th>
+            <th onclick="sortTable('modelo')">Modelo <span id="sort-modelo"></span></th>
+            <th onclick="sortTable('cor')">Cor <span id="sort-cor"></span></th>
+            <th onclick="sortTable('cliente')">Cliente <span id="sort-cliente"></span></th>
+            <th onclick="sortTable('vendedor')">Vendedor <span id="sort-vendedor"></span></th>
+            <th onclick="sortTable('dataInicio')">Início <span id="sort-dataInicio"></span></th>
+            <th onclick="sortTable('status')">Status <span id="sort-status"></span></th>
+            <th onclick="sortTable('statusSince')">Tempo <span id="sort-statusSince"></span></th>
+            <th onclick="sortTable('dataEntrega')">Entrega <span id="sort-dataEntrega"></span></th>
           </tr></thead>
           <tbody id="tbody"></tbody>
         </table>
@@ -308,9 +314,6 @@ tr:hover td{background:#f9f9fb}
 
     <!-- ADMIN -->
     <div id="viewA" style="display:none">
-      <div class="info-box">
-        ℹ️ <strong>Usuários</strong> são gerenciados pelo <strong>Microsoft Entra ID</strong>. Para adicionar ou remover acessos, acesse o portal <strong>entra.microsoft.com</strong> e gerencie o Grupo de Segurança <strong>PDS-Usuarios</strong>. Os níveis de acesso são definidos por grupos: <em>PDS-Admin, PDS-Gestor, PDS-Operador, PDS-Visualizador</em>.
-      </div>
       <div class="admin-grid">
         <!-- LOJAS -->
         <div class="admin-card">
@@ -324,10 +327,10 @@ tr:hover td{background:#f9f9fb}
         </div>
         <!-- USUÁRIOS -->
         <div class="admin-card">
-          <h4>👤 Perfis de Acesso</h4>
+          <h4>👤 Usuários</h4>
           <div class="admin-form">
-            <label>E-mail corporativo</label>
-            <input type="email" id="adminUserEmail" placeholder="usuario@empresa.com"/>
+            <label>E-mail</label>
+            <input type="email" id="adminUserEmail" placeholder="usuario@email.com"/>
             <label>Nível de acesso</label>
             <select id="adminUserNivel" onchange="onNivelChange()">
               <option value="visualizador">Visualizador</option>
@@ -341,7 +344,7 @@ tr:hover td{background:#f9f9fb}
             </div>
             <label>Lojas com acesso</label>
             <div class="checkbox-grid" id="adminUserLojas"></div>
-            <button class="primary" onclick="salvarUsuario()">Salvar perfil</button>
+            <button class="primary" onclick="salvarUsuario()">Salvar usuário</button>
           </div>
           <div class="admin-list" id="adminUserList"></div>
         </div>
@@ -416,6 +419,7 @@ tr:hover td{background:#f9f9fb}
       <div class="add-field"><label>Vendedor</label><input id="nV" placeholder="Ana"/></div>
       <div class="add-field span2"><label>Data prevista de entrega</label><input id="nE" type="date"/></div>
       <div class="add-field span2"><label>Loja *</label><select id="nLoja"></select></div>
+      <div class="add-field span2"><label>Observações</label><textarea id="nObs" rows="2" style="font-size:13px;padding:8px 10px;border:1.5px solid #d0d0d0;border-radius:6px;outline:none;width:100%;resize:vertical;font-family:inherit" placeholder="Anotações livres..."></textarea></div>
     </div>
     <div class="modal-actions">
       <button onclick="closeAddModal()">Cancelar</button>
@@ -444,107 +448,218 @@ tr:hover td{background:#f9f9fb}
   </div>
 </div>
 
+<div class="modal-overlay" id="modalHistoricoOverlay">
+  <div class="modal" style="max-width:580px">
+    <div class="modal-icon">📋</div>
+    <div class="modal-title" id="histModalTitle">Histórico</div>
+    <div style="overflow-x:auto;margin-top:14px;max-height:55vh;overflow-y:auto">
+      <table class="hist-modal-table">
+        <thead><tr><th>Etapa / Evento</th><th>Início</th><th>Fim</th><th>Duração</th></tr></thead>
+        <tbody id="histModalBody"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions">
+      <button onclick="closeHistoricoModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="modalConcluidaOverlay">
+  <div class="modal">
+    <div class="modal-icon">✅</div>
+    <div class="modal-title">Marcar etapa como concluída?</div>
+    <div class="modal-sub">Veículo: <strong id="concluidaChassi"></strong></div>
+    <div class="modal-sub" id="concluidaEtapa" style="margin-bottom:20px;color:#888;font-size:12px;margin-top:4px"></div>
+    <div class="modal-actions">
+      <button onclick="cancelarConcluida()">Cancelar</button>
+      <button class="green" onclick="confirmConcluida()">✅ Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
+<!-- MSAL.js — Microsoft Authentication Library -->
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
 <script>
 // ============================================================
-// PDS — CONFIGURAÇÃO MICROSOFT
+// CONFIGURAÇÃO MICROSOFT — preencha com seus valores
 // ============================================================
-// ⚠️  ALTERE ESTAS VARIÁVEIS com os valores do seu tenant
-// ============================================================
-
 const MSAL_CONFIG = {
   auth: {
-    clientId:    "33346696-9ce1-42aa-8d3a-a36f3f70d8f8",   // App registration → Application (client) ID
-    authority:   "https://login.microsoftonline.com/7e7117fa-cd8d-41fa-846a-5a4198a0e022", // Tenant ID
-    redirectUri: window.location.href.split('?')[0]     // URL desta página
+    clientId:    "33346696-9ce1-42aa-8d3a-a36f3f70d8f8",
+    authority:   "https://login.microsoftonline.com/7e7117fa-cd8d-41fa-846a-5a4198a0e022",
+    redirectUri: "https://pushix007.github.io/entrega/"
   },
   cache: { cacheLocation: "sessionStorage", storeAuthStateInCookie: false }
 };
-
-// URL base do Dataverse — substitua pelo seu environment
-// Formato: https://NOME_DO_AMBIENTE.crm.dynamics.com
-const DATAVERSE_URL = "orgaa2b7be4.crm2.dynamics.com";
-
-// Escopo de acesso ao Dataverse
-const DATAVERSE_SCOPE = [`${DATAVERSE_URL}/.default`];
-
-// ============================================================
-// NOMES DAS TABELAS NO DATAVERSE
-// (após criação manual conforme README)
-// ============================================================
+const DATAVERSE_URL   = "orgaa2b7be4.crm2.dynamics.com"; // ⚠ preencha com sua URL do Dataverse
+const DATAVERSE_SCOPE = [DATAVERSE_URL + "/.default"];
 const TABLES = {
-  veiculos:  "pds_veiculoes",   // Dataverse pluraliza automaticamente
+  veiculos:  "pds_veiculoes",
   historico: "pds_historicoes",
   lojas:     "pds_lojas",
   usuarios:  "pds_usuarios"
 };
 
-// ============================================================
-// CONSTANTES DO SISTEMA
-// ============================================================
-const STAGES    = ['Proposta','PDS','Transporte','Inst. Acessórios','Estética','Lavagem','Preparação para Entrega','Finalizado','Entregue'];
-const STAGEABBR = ['Proposta','PDS','Transp.','Acess.','Estética','Lavagem','Prep.','Finalizado','Entregue'];
-const BADGE_BG  = ['#F3E5F5','#E6F1FB','#EEEDFE','#FAEEDA','#E1F5EE','#EAF3DE','#FBEAF0','#E8EAF6','#d4edda'];
-const BADGE_FG  = ['#6A1B9A','#0C447C','#3C3489','#633806','#085041','#27500A','#72243E','#283593','#155724'];
-const STAGE_CLS = ['b8','b0','b1','b2','b3','b4','b5','b6','b7'];
-const POLL_INTERVAL_MS = 10 * 60 * 1000; // 10 minutos
-
-// ============================================================
-// ESTADO GLOBAL
-// ============================================================
+// ── Instância MSAL (inicializada antes de qualquer uso) ──────
 let msalInstance = null;
 let accessToken  = null;
+
+async function initMsal() {
+  msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
+  await msalInstance.initialize();
+}
+
+// ── API Dataverse ────────────────────────────────────────────
+async function dvGet(table, filter='') {
+  const url = DATAVERSE_URL + '/api/data/v9.2/' + table + (filter ? '?$filter=' + encodeURIComponent(filter) : '');
+  const res = await fetch(url, { headers: {
+    'Authorization': 'Bearer ' + accessToken,
+    'OData-MaxVersion': '4.0', 'OData-Version': '4.0',
+    'Accept': 'application/json', 'Content-Type': 'application/json'
+  }});
+  if (!res.ok) throw new Error('Dataverse GET ' + table + ': ' + res.status);
+  return (await res.json()).value;
+}
+async function dvPost(table, body) {
+  const res = await fetch(DATAVERSE_URL + '/api/data/v9.2/' + table, {
+    method:'POST', headers:{
+      'Authorization':'Bearer '+accessToken,
+      'OData-MaxVersion':'4.0','OData-Version':'4.0',
+      'Accept':'application/json','Content-Type':'application/json'
+    }, body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error('Dataverse POST ' + table + ': ' + res.status);
+  const loc = res.headers.get('OData-EntityId') || res.headers.get('Location') || '';
+  const m = loc.match(/\(([^)]+)\)$/); return m ? m[1] : null;
+}
+async function dvPatch(table, id, body) {
+  const res = await fetch(DATAVERSE_URL + '/api/data/v9.2/' + table + '(' + id + ')', {
+    method:'PATCH', headers:{
+      'Authorization':'Bearer '+accessToken,
+      'OData-MaxVersion':'4.0','OData-Version':'4.0',
+      'Accept':'application/json','Content-Type':'application/json'
+    }, body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error('Dataverse PATCH ' + id + ': ' + res.status);
+}
+async function dvDelete(table, id) {
+  const res = await fetch(DATAVERSE_URL + '/api/data/v9.2/' + table + '(' + id + ')', {
+    method:'DELETE', headers:{'Authorization':'Bearer '+accessToken}
+  });
+  if (!res.ok) throw new Error('Dataverse DELETE ' + id + ': ' + res.status);
+}
+
+// ── Substitutos das funções Firebase ────────────────────────
+const saveVehicle = async v => {
+  const body = {
+    pds_chassi: v.chassi, pds_modelo: v.modelo||'', pds_cor: v.cor||'',
+    pds_cliente: v.cliente||'', pds_vendedor: v.vendedor||'',
+    pds_dataentrega: v.dataEntrega||null, pds_lojaid_ref: v.lojaId||'',
+    pds_status: v.status||'Proposta', pds_datainicio: v.dataInicio||'',
+    pds_statussince: v.statusSince||'', pds_parado: v.parado||false,
+    pds_paradomotive: v.paradoMotivo||'', pds_history: JSON.stringify(v.history||[]),
+    pds_concluida: v.concluida||false
+  };
+  if (v._id) await dvPatch(TABLES.veiculos, v._id, body);
+  else { const id = await dvPost(TABLES.veiculos, body); v._id = id; }
+};
+const deleteVehicle = async c => {
+  const v = vehicles.find(x => x.chassi === c);
+  if (v && v._id) await dvDelete(TABLES.veiculos, v._id);
+};
+const saveHistorico = async rows => { for (const r of rows) await dvPost(TABLES.historico, r); };
+const loadHistoricoData = async () => {
+  const raw = await dvGet(TABLES.historico);
+  return raw.map(h => ({
+    chassi: h.pds_chassi, modelo: h.pds_modelo||'', cliente: h.pds_cliente||'',
+    lojaId: h.pds_lojaid_ref||'', lojaNome: h.pds_lojaNome||nomeLoja(h.pds_lojaid_ref||''),
+    etapa: h.pds_etapa||'', inicio: h.pds_inicio||'', fim: h.pds_fim||'',
+    duracao: h.pds_duracao||'', dataEntrega: h.pds_dataentrega||'', situacao: h.pds_situacao||''
+  }));
+};
+
+// ── CONSTANTES ───────────────────────────────────────────────
+const STAGES    = ['Proposta','PDS','Transporte','Inst. Acessórios','Serviço Externo','Estética','Lavagem','Preparação para Entrega','Finalizado','Entregue'];
+const STAGEABBR = ['Proposta','PDS','Transp.','Acess.','Serv.Ext.','Estética','Lavagem','Prep.','Finalizado','Entregue'];
+const BADGE_BG  = ['#F3E5F5','#E6F1FB','#EEEDFE','#FAEEDA','#FFF3E0','#E1F5EE','#EAF3DE','#FBEAF0','#E8EAF6','#d4edda'];
+const BADGE_FG  = ['#6A1B9A','#0C447C','#3C3489','#633806','#E65100','#085041','#27500A','#72243E','#283593','#155724'];
+const STAGE_CLS = ['b8','b0','b1','b2','b9','b3','b4','b5','b6','b7'];
+
 let vehicles     = [];
-let lojas        = [];
+let lojas        = [];   // [{id, nome, ativa}]
 let todosUsuarios= [];
+let currentUser  = null;
 let userProfile  = null;
-let lojaAtiva    = null;
+let lojaAtiva    = null; // id da loja selecionada, ou 'todas'
 let dragSrcChassi= null;
 let pendingMove  = null;
 let pendingFinal = null;
 let pendingParar = null;
-let pendingRetomar = null;
-let pendingReprog  = null;
-let tableSortCol = 'pds_dataentrega';
+let pendingRetomar=null;
+let pendingReprog = null;
+let pendingConcluida = null;
+let tableSortCol = 'dataEntrega';
 let tableSortAsc = true;
-let pollTimer    = null;
+let unsubVehicles= null;
 
-// ============================================================
-// INICIALIZAÇÃO MSAL
-// ============================================================
-window.onload = async () => {
-  msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
-  await msalInstance.initialize();
-
-  // Trata redirect de volta do login Microsoft
-  try {
-    const resp = await msalInstance.handleRedirectPromise();
-    if (resp) await onLoginSuccess(resp.account);
-    else {
-      const accounts = msalInstance.getAllAccounts();
-      if (accounts.length > 0) await onLoginSuccess(accounts[0]);
-    }
-  } catch(e) {
-    document.getElementById('loginErr').textContent = 'Erro ao autenticar: ' + e.message;
-  }
+// ── TOAST ─────────────────────────────────────────────────────
+window.showToast = (msg,ms=2800)=>{
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),ms);
 };
+
+// ── UTILS ─────────────────────────────────────────────────────
+const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d;};
+const isoDate=d=>d.toISOString().slice(0,10);
+function parseDate(v){
+  if(!v) return null; v=(v+'').trim();
+  if(/^\\d{5,}$/.test(v)){const d=new Date(Date.UTC(1899,11,30)+parseInt(v)*86400000);return isNaN(d)?null:d;}
+  const br=v.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})$/);
+  if(br) return new Date(+br[3],+br[2]-1,+br[1]);
+  const iso=v.match(/^(\\d{4})-(\\d{2})-(\\d{2})/);
+  if(iso) return new Date(+iso[1],+iso[2]-1,+iso[3]);
+  const d=new Date(v); return isNaN(d)?null:d;
+}
+const fmtDate=v=>{if(!v)return '-';const d=parseDate(v);return d?d.toLocaleDateString('pt-BR'):v;};
+const fmtDateTime=iso=>{if(!iso)return '-';const d=new Date(iso);return isNaN(d)?iso:d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});};
+const elapsedStr=iso=>{if(!iso)return '-';const diff=Math.floor((Date.now()-new Date(iso))/60000);if(diff<1)return '<1min';if(diff<60)return diff+'min';if(diff<1440)return Math.floor(diff/60)+'h';return Math.floor(diff/1440)+'d';};
+const durationStr=(s,e)=>{if(!s)return '-';const diff=Math.max(0,Math.floor(((e?new Date(e):new Date())-new Date(s))/60000));const d=Math.floor(diff/1440),h=Math.floor((diff%1440)/60),m=diff%60;return[(d?d+'d':''),(h?h+'h':''),m+'min'].filter(Boolean).join(' ');};
+const durationMinutes=(s,e)=>{if(!s)return 0;return Math.max(0,Math.floor(((e?new Date(e):new Date())-new Date(s))/60000));};
+function businessDaysFromToday(n){const days=[];let d=new Date();d.setHours(0,0,0,0);if(d.getDay()!==0&&d.getDay()!==6)days.push(new Date(d));while(days.length<n){d=new Date(d);d.setDate(d.getDate()+1);if(d.getDay()!==0&&d.getDay()!==6)days.push(new Date(d));}return days;}
+const nextBizDay=d=>{const r=new Date(d);while(r.getDay()===0||r.getDay()===6)r.setDate(r.getDate()+1);return r;};
+const nomeLoja=id=>{const l=lojas.find(x=>x.id===id);return l?l.nome:id||'—';};
+function canMoveTo(stage){
+  if(!userProfile)return false;
+  if(userProfile.nivel==='admin')return true;
+  if(userProfile.nivel==='gestor')return true;
+  if(userProfile.nivel==='visualizador')return false;
+  return(userProfile.etapas||[]).includes(stage);
+}
+function vehiclesFiltrados(){
+  if(!lojaAtiva||lojaAtiva==='todas') return vehicles;
+  return vehicles.filter(v=>v.lojaId===lojaAtiva);
+}
+function setMsg(txt,type=''){const el=document.getElementById('syncMsg');el.textContent=txt;el.className='sync-msg'+(type?' '+type:'');}
+
+// ── DATAVERSE: saveVehicle, deleteVehicle, saveHistorico, loadHistoricoData definidos acima ──
+
+// ── AUTH ──────────────────────────────────────────────────────
+
 
 window.doLogin = async () => {
   const btn = document.getElementById('loginBtn');
   const err = document.getElementById('loginErr');
-  btn.innerHTML = '<span class="spinner"></span> Redirecionando...';
-  btn.disabled = true;
+  btn.innerHTML = '⟳ Redirecionando...';
+  btn.disabled  = true;
   err.textContent = '';
   try {
-    await msalInstance.loginRedirect({
-      scopes: DATAVERSE_SCOPE,
-      prompt: 'select_account'
-    });
+    await msalInstance.loginRedirect({ scopes: DATAVERSE_SCOPE, prompt: 'select_account' });
   } catch(e) {
     err.textContent = 'Erro: ' + e.message;
-    btn.innerHTML = `<svg viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="10" height="10" fill="#F25022"/><rect x="12" y="1" width="10" height="10" fill="#7FBA00"/><rect x="1" y="12" width="10" height="10" fill="#00A4EF"/><rect x="12" y="12" width="10" height="10" fill="#FFB900"/></svg> Entrar com Microsoft`;
-    btn.disabled = false;
+    btn.innerHTML = '&#x229E; Entrar com Microsoft';
+    btn.disabled  = false;
   }
 };
 
@@ -555,19 +670,10 @@ window.doLogout = async () => {
 
 async function onLoginSuccess(account) {
   try {
-    const tokenResp = await msalInstance.acquireTokenSilent({
-      scopes: DATAVERSE_SCOPE,
-      account
-    });
+    const tokenResp = await msalInstance.acquireTokenSilent({ scopes: DATAVERSE_SCOPE, account });
     accessToken = tokenResp.accessToken;
-
-    // Carrega dados iniciais
     await carregarDadosIniciais(account);
-
-    // Inicia polling de 10 minutos
     iniciarPolling();
-
-    // Exibe app
     document.getElementById('loginWrap').style.display = 'none';
     document.getElementById('appWrap').style.display   = 'block';
   } catch(e) {
@@ -575,138 +681,62 @@ async function onLoginSuccess(account) {
   }
 }
 
-// ============================================================
-// POLLING — ATUALIZAÇÃO A CADA 10 MINUTOS
-// ============================================================
+// ── Polling 10 minutos ────────────────────────────────────────
 function iniciarPolling() {
   if (pollTimer) clearInterval(pollTimer);
-  pollTimer = setInterval(async () => {
-    await atualizarDados();
-  }, POLL_INTERVAL_MS);
+  pollTimer = setInterval(atualizarDados, POLL_INTERVAL_MS);
 }
 
 async function atualizarDados() {
   const badge = document.getElementById('realtimeBadge');
   badge.textContent = '⟳ Atualizando...';
-  badge.classList.add('syncing');
   try {
-    await carregarVeiculos();
-    atualizarVistaAtiva();
-    const agora = new Date();
-    const hm = agora.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
-    document.getElementById('lastUpdate').textContent = 'Última atualização: ' + hm;
+    const raw = await dvGet(TABLES.veiculos);
+    vehicles = raw.map(mapVehicle);
+    renderKanban(); renderTable(); renderCalendar();
+    const hm = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('lastUpdate').textContent = 'Atualizado: ' + hm;
     badge.textContent = '● Ao vivo';
-    badge.classList.remove('syncing');
-    setMsg('Atualizado às ' + hm, 'ok');
+    setMsg('Conectado ao Dataverse', 'ok');
   } catch(e) {
     badge.textContent = '⚠ Erro';
-    badge.classList.remove('syncing');
-    setMsg('Erro ao atualizar: ' + e.message, 'err');
+    setMsg('Erro: ' + e.message, 'err');
   }
 }
 
 window.forcarAtualizacao = async () => {
   await atualizarDados();
-  // Reinicia o timer para que a próxima atualização seja daqui 10min a partir de agora
   iniciarPolling();
   showToast('🔄 Dados atualizados!');
 };
 
-function atualizarVistaAtiva() {
-  const tabs = ['k','t','c','r','a'];
-  for (const t of tabs) {
-    const el = document.getElementById('view' + t.toUpperCase());
-    if (el && el.style.display !== 'none') {
-      if (t === 'k') renderKanban();
-      if (t === 't') renderTable();
-      if (t === 'c') renderCalendar();
-      // relatório e admin não atualizam sozinhos para não perder filtros
-      break;
-    }
-  }
+function mapVehicle(v) {
+  return {
+    _id:          v.pds_veiculoid,
+    chassi:       v.pds_chassi,
+    modelo:       v.pds_modelo      || '',
+    cor:          v.pds_cor         || '',
+    cliente:      v.pds_cliente     || '',
+    vendedor:     v.pds_vendedor    || '',
+    dataEntrega:  v.pds_dataentrega || '',
+    lojaId:       v.pds_lojaid_ref  || '',
+    status:       v.pds_status      || 'Proposta',
+    dataInicio:   v.pds_datainicio  || '',
+    statusSince:  v.pds_statussince || '',
+    parado:       v.pds_parado      || false,
+    paradoMotivo: v.pds_paradomotive|| '',
+    concluida:    v.pds_concluida   || false,
+    history:      JSON.parse(v.pds_history || '[]')
+  };
 }
 
-// ============================================================
-// API DATAVERSE — FUNÇÕES GENÉRICAS
-// ============================================================
-async function dvGet(table, filter = '') {
-  const url = `${DATAVERSE_URL}/api/data/v9.2/${table}${filter ? '?$filter=' + encodeURIComponent(filter) : ''}`;
-  const res = await fetch(url, {
-    headers: {
-      'Authorization': 'Bearer ' + accessToken,
-      'OData-MaxVersion': '4.0',
-      'OData-Version': '4.0',
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    }
-  });
-  if (!res.ok) throw new Error(`Dataverse GET ${table}: ${res.status} ${res.statusText}`);
-  const data = await res.json();
-  return data.value;
-}
-
-async function dvPost(table, body) {
-  const res = await fetch(`${DATAVERSE_URL}/api/data/v9.2/${table}`, {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Bearer ' + accessToken,
-      'OData-MaxVersion': '4.0',
-      'OData-Version': '4.0',
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(body)
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Dataverse POST ${table}: ${res.status} — ${err}`);
-  }
-  // Retorna o ID do registro criado via header Location
-  const loc = res.headers.get('OData-EntityId') || res.headers.get('Location') || '';
-  const match = loc.match(/\(([^)]+)\)$/);
-  return match ? match[1] : null;
-}
-
-async function dvPatch(table, id, body) {
-  const res = await fetch(`${DATAVERSE_URL}/api/data/v9.2/${table}(${id})`, {
-    method: 'PATCH',
-    headers: {
-      'Authorization': 'Bearer ' + accessToken,
-      'OData-MaxVersion': '4.0',
-      'OData-Version': '4.0',
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(body)
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Dataverse PATCH ${table}(${id}): ${res.status} — ${err}`);
-  }
-}
-
-async function dvDelete(table, id) {
-  const res = await fetch(`${DATAVERSE_URL}/api/data/v9.2/${table}(${id})`, {
-    method: 'DELETE',
-    headers: { 'Authorization': 'Bearer ' + accessToken }
-  });
-  if (!res.ok) throw new Error(`Dataverse DELETE ${table}(${id}): ${res.status}`);
-}
-
-// ============================================================
-// CARGA DE DADOS
-// ============================================================
+// ── Carregamento inicial ──────────────────────────────────────
 async function carregarDadosIniciais(account) {
-  // Lojas
-  const lojasRaw = await dvGet(TABLES.lojas, "pds_ativa eq true");
-  lojas = lojasRaw.map(l => ({ id: l.pds_lojaid, nome: l.pds_nome }));
+  const lSnap = await dvGet(TABLES.lojas, 'pds_ativa eq true');
+  lojas = lSnap.map(l => ({ id: l.pds_lojaid, nome: l.pds_nome, ativa: l.pds_ativa !== false }));
 
-  // Perfil do usuário logado
-  const email = account.username.toLowerCase();
-  document.getElementById('headerUser').textContent = email.split('@')[0];
-
-  const usuariosRaw = await dvGet(TABLES.usuarios);
-  todosUsuarios = usuariosRaw.map(u => ({
+  const uSnap = await dvGet(TABLES.usuarios);
+  todosUsuarios = uSnap.map(u => ({
     id:     u.pds_usuarioid,
     email:  (u.pds_email || '').toLowerCase(),
     nivel:  u.pds_nivel   || 'visualizador',
@@ -714,707 +744,626 @@ async function carregarDadosIniciais(account) {
     etapas: JSON.parse(u.pds_etapas || '[]')
   }));
 
-  userProfile = todosUsuarios.find(u => u.email === email)
+  const email = account.username.toLowerCase();
+  userProfile  = todosUsuarios.find(u => u.email === email)
     || { nivel: 'visualizador', lojas: [], etapas: [] };
+  currentUser  = { email, displayName: email.split('@')[0] };
 
+  document.getElementById('headerUser').textContent  = currentUser.displayName;
   document.getElementById('headerNivel').textContent = userProfile.nivel;
 
   const isAdmin  = userProfile.nivel === 'admin';
   const isGestor = userProfile.nivel === 'gestor';
-  const podeAdd  = isAdmin || isGestor ||
-    (userProfile.nivel === 'operador' &&
-     (userProfile.etapas || []).some(e => e === 'Proposta' || e === 'PDS'));
-
+  const podeAdd  = isAdmin || isGestor || (userProfile.nivel === 'operador' &&
+    (userProfile.etapas || []).some(e => e === 'Proposta' || e === 'PDS'));
   document.getElementById('btnNovoVeiculo').style.display = podeAdd ? '' : 'none';
   document.getElementById('tabA').style.display = isAdmin ? '' : 'none';
 
+  const vSnap = await dvGet(TABLES.veiculos);
+  vehicles = vSnap.map(mapVehicle);
+
+  const hm = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('lastUpdate').textContent = 'Atualizado: ' + hm;
+
   buildLojaSelector();
-  await carregarVeiculos();
+  renderKanban(); renderTable(); renderCalendar();
+  setMsg('Conectado ao Dataverse', 'ok');
+}
+});
 
-  // Marca última atualização
-  const hm = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
-  document.getElementById('lastUpdate').textContent = 'Última atualização: ' + hm;
-
-  renderKanban();
-  renderCalendar();
-}
-
-async function carregarVeiculos() {
-  const raw = await dvGet(TABLES.veiculos);
-  vehicles = raw.map(v => ({
-    _id:         v.pds_veiculoid,
-    chassi:      v.pds_chassi,
-    modelo:      v.pds_modelo      || '',
-    cor:         v.pds_cor         || '',
-    cliente:     v.pds_cliente     || '',
-    vendedor:    v.pds_vendedor    || '',
-    dataEntrega: v.pds_dataentrega || '',
-    lojaId:      v.pds_lojaid_ref  || '',
-    status:      v.pds_status      || 'Proposta',
-    dataInicio:  v.pds_datainicio  || '',
-    statusSince: v.pds_statussince || '',
-    parado:      v.pds_parado      || false,
-    paradoMotivo:v.pds_paradomotive|| '',
-    history:     JSON.parse(v.pds_history || '[]')
-  }));
-}
-
-// ============================================================
-// SALVAR / DELETAR VEÍCULOS
-// ============================================================
-async function saveVehicle(v) {
-  const body = {
-    pds_chassi:       v.chassi,
-    pds_modelo:       v.modelo       || '',
-    pds_cor:          v.cor          || '',
-    pds_cliente:      v.cliente      || '',
-    pds_vendedor:     v.vendedor     || '',
-    pds_dataentrega:  v.dataEntrega  || null,
-    pds_lojaid_ref:   v.lojaId       || '',
-    pds_status:       v.status       || 'Proposta',
-    pds_datainicio:   v.dataInicio   || '',
-    pds_statussince:  v.statusSince  || '',
-    pds_parado:       v.parado       || false,
-    pds_paradomotive: v.paradoMotivo || '',
-    pds_history:      JSON.stringify(v.history || [])
-  };
-  if (v._id) {
-    await dvPatch(TABLES.veiculos, v._id, body);
-  } else {
-    const newId = await dvPost(TABLES.veiculos, body);
-    v._id = newId;
-  }
-}
-
-async function deleteVehicle(chassi) {
-  const v = vehicles.find(x => x.chassi === chassi);
-  if (v && v._id) await dvDelete(TABLES.veiculos, v._id);
-}
-
-async function saveHistorico(rows) {
-  for (const r of rows) {
-    await dvPost(TABLES.historico, {
-      pds_chassi:      r.chassi,
-      pds_modelo:      r.modelo      || '',
-      pds_cliente:     r.cliente     || '',
-      pds_lojaid_ref:  r.lojaId      || '',
-      pds_lojaNome:    r.lojaNome    || '',
-      pds_etapa:       r.etapa       || '',
-      pds_inicio:      r.inicio      || '',
-      pds_fim:         r.fim         || '',
-      pds_duracao:     r.duracao     || '',
-      pds_dataentrega: r.dataEntrega || '',
-      pds_situacao:    r.situacao    || ''
-    });
-  }
-}
-
-// ============================================================
-// UTILITÁRIOS
-// ============================================================
-window.showToast = (msg, ms = 2800) => {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), ms);
-};
-const today = () => { const d = new Date(); d.setHours(0,0,0,0); return d; };
-const isoDate = d => d.toISOString().slice(0, 10);
-function parseDate(v) {
-  if (!v) return null;
-  v = (v + '').trim();
-  const br = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (br) return new Date(+br[3], +br[2]-1, +br[1]);
-  const iso = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (iso) return new Date(+iso[1], +iso[2]-1, +iso[3]);
-  const d = new Date(v); return isNaN(d) ? null : d;
-}
-const fmtDate = v => { if (!v) return '-'; const d = parseDate(v); return d ? d.toLocaleDateString('pt-BR') : v; };
-const fmtDateTime = iso => { if (!iso) return '-'; const d = new Date(iso); return isNaN(d) ? iso : d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}); };
-const elapsedStr = iso => { if (!iso) return '-'; const diff = Math.floor((Date.now() - new Date(iso)) / 60000); if (diff < 1) return '<1min'; if (diff < 60) return diff + 'min'; if (diff < 1440) return Math.floor(diff/60) + 'h'; return Math.floor(diff/1440) + 'd'; };
-const durationStr = (s, e) => { if (!s) return '-'; const diff = Math.max(0, Math.floor(((e ? new Date(e) : new Date()) - new Date(s)) / 60000)); const d = Math.floor(diff/1440), h = Math.floor((diff%1440)/60), m = diff%60; return [(d?d+'d':''),(h?h+'h':''),m+'min'].filter(Boolean).join(' '); };
-const durationMinutes = (s, e) => { if (!s) return 0; return Math.max(0, Math.floor(((e ? new Date(e) : new Date()) - new Date(s)) / 60000)); };
-function businessDaysFromToday(n) { const days = []; let d = new Date(); d.setHours(0,0,0,0); if (d.getDay()!==0 && d.getDay()!==6) days.push(new Date(d)); while (days.length < n) { d = new Date(d); d.setDate(d.getDate()+1); if (d.getDay()!==0 && d.getDay()!==6) days.push(new Date(d)); } return days; }
-const nextBizDay = d => { const r = new Date(d); while (r.getDay()===0 || r.getDay()===6) r.setDate(r.getDate()+1); return r; };
-const nomeLoja = id => { const l = lojas.find(x => x.id === id); return l ? l.nome : id || '—'; };
-function canMoveTo(stage) {
-  if (!userProfile) return false;
-  if (userProfile.nivel === 'admin' || userProfile.nivel === 'gestor') return true;
-  if (userProfile.nivel === 'visualizador') return false;
-  return (userProfile.etapas || []).includes(stage);
-}
-function vehiclesFiltrados() {
-  if (!lojaAtiva || lojaAtiva === 'todas') return vehicles;
-  return vehicles.filter(v => v.lojaId === lojaAtiva);
-}
-function setMsg(txt, type='') {
-  const el = document.getElementById('syncMsg');
-  el.textContent = txt;
-  el.className = 'sync-msg' + (type ? ' ' + type : '');
-}
-
-// ============================================================
-// SELETOR DE LOJA
-// ============================================================
-function buildLojaSelector() {
-  const sel = document.getElementById('lojaSelector');
-  sel.innerHTML = '';
-  const isGestor = userProfile.nivel === 'admin' || userProfile.nivel === 'gestor';
-  const lojasAcesso = isGestor ? lojas : lojas.filter(l => (userProfile.lojas || []).includes(l.id));
-  if (isGestor) {
-    const opt = document.createElement('option');
-    opt.value = 'todas'; opt.textContent = 'Todas as lojas';
+// ── SELETOR DE LOJA ──────────────────────────────────────────
+function buildLojaSelector(){
+  const sel=document.getElementById('lojaSelector');
+  sel.innerHTML='';
+  const isGestor=userProfile.nivel==='admin';
+  const lojasAcesso=isGestor?lojas:lojas.filter(l=>(userProfile.lojas||[]).includes(l.id));
+  if(isGestor){
+    const opt=document.createElement('option');
+    opt.value='todas';opt.textContent='Todas as lojas';
     sel.appendChild(opt);
   }
-  lojasAcesso.forEach(l => {
-    const opt = document.createElement('option');
-    opt.value = l.id; opt.textContent = l.nome;
+  lojasAcesso.forEach(l=>{
+    const opt=document.createElement('option');
+    opt.value=l.id;opt.textContent=l.nome;
     sel.appendChild(opt);
   });
-  lojaAtiva = sel.value || null;
+  lojaAtiva=sel.value||null;
 }
-window.onLojaChange = () => {
-  lojaAtiva = document.getElementById('lojaSelector').value;
-  renderKanban(); renderTable(); renderCalendar();
+window.onLojaChange=()=>{
+  lojaAtiva=document.getElementById('lojaSelector').value;
+  renderKanban();renderTable();renderCalendar();
 };
 
-// ============================================================
-// KANBAN
-// ============================================================
-function entregaBadge(de) {
-  if (!de) return '';
-  const d = parseDate(de); if (!d) return '';
-  const diff = Math.floor((d - today()) / 86400000);
-  let cls = 'ok', label = '📅 ' + fmtDate(de);
-  if (diff < 0) { cls = 'late'; label = '⚠ Atrasado ' + fmtDate(de); }
-  else if (diff <= 3) { cls = 'soon'; label = '⏰ ' + fmtDate(de); }
-  return `<div class="card-entrega ${cls}">${label}</div>`;
+// ── Polling via iniciarPolling() — definido acima ──
+
+// ── KANBAN ───────────────────────────────────────────────────
+function entregaBadge(de){
+  if(!de)return '';
+  const d=parseDate(de);if(!d)return '';
+  const diff=Math.floor((d-today())/86400000);
+  let cls='ok',label='📅 '+fmtDate(de);
+  if(diff<0){cls='late';label='⚠ Atrasado '+fmtDate(de);}
+  else if(diff<=3){cls='soon';label='⏰ '+fmtDate(de);}
+  return \`<div class="card-entrega \${cls}">\${label}</div>\`;
 }
-function buildCard(v) {
-  const isEntregue = v.status === 'Entregue';
-  const isParado   = !!v.parado;
-  const isDraggable = !isEntregue && !isParado && userProfile && userProfile.nivel !== 'visualizador';
-  const card = document.createElement('div');
-  card.className = 'card' + (isDraggable ? ' draggable' : '') + (isEntregue ? ' entregue-card' : '') + (isParado ? ' parado' : '');
-  card.draggable = isDraggable;
-  const hist = (v.history || []).filter(h => h.leftAt).map(h => {
-    const si = STAGES.indexOf(h.stage);
-    return `<span class="hbadge ${si >= 0 ? STAGE_CLS[si] : 'b0'}">✓ ${si >= 0 ? STAGEABBR[si] : h.stage}</span>`;
-  }).join('');
-  const podeOperar = userProfile && userProfile.nivel !== 'visualizador';
-  const btnParar = podeOperar && !isEntregue
-    ? (isParado
-        ? `<button class="btn-retomar" onclick="openRetomarModal('${v.chassi}')">▶ Retomar</button>`
-        : `<button class="btn-parar" onclick="openPararModal('${v.chassi}')">⏸ Parar</button>`)
-    : '';
-  card.innerHTML = `
-    <div class="card-chassi">${v.chassi}</div>
-    <div class="card-sub">${[v.modelo, v.cor].filter(Boolean).join(' · ') || '—'}</div>
-    <div class="card-sub">${v.cliente || ''}</div>
-    <div class="card-sub" style="color:#888;font-size:10px">🏪 ${nomeLoja(v.lojaId)}</div>
-    ${entregaBadge(v.dataEntrega)}
-    ${isParado ? `<div class="card-parado-label">🛑 Parado</div><div class="card-parado-motivo">${v.paradoMotivo || ''}</div>` : ''}
-    ${hist ? `<div class="card-history">${hist}</div>` : ''}
-    ${isEntregue ? `<div style="margin-top:8px;font-size:11px;color:#28a745;font-weight:600">👆 Clique para finalizar</div>` : ''}
-    ${btnParar}`;
-  if (isEntregue) {
-    card.addEventListener('click', e => {
-      if (e.target.tagName === 'BUTTON') return;
-      if (userProfile && (userProfile.nivel === 'admin' || userProfile.nivel === 'gestor')) openFinalModal(v.chassi);
+function buildCard(v){
+  const isEntregue=v.status==='Entregue';
+  const isParado=!!v.parado;
+  const isConcluida=!!v.etapaConcluida;
+  const isDraggable=!isEntregue&&!isParado&&userProfile&&userProfile.nivel!=='visualizador';
+  const card=document.createElement('div');
+  card.className='card'+(isDraggable?' draggable':'')+(isEntregue?' entregue-card':'')+(isParado?' parado':'')+(isConcluida&&!isParado?' concluida':'');
+  card.draggable=isDraggable;
+  const hasHistory=(v.history||[]).filter(h=>h.leftAt).length>0;
+  const podeOperar=userProfile&&userProfile.nivel!=='visualizador';
+  const btnParar=podeOperar&&!isEntregue?(isParado?\`<button class="btn-retomar" onclick="openRetomarModal('\${v.chassi}')">▶ Retomar</button>\`:\`<button class="btn-parar" onclick="openPararModal('\${v.chassi}')">⏸ Parar</button>\`):'';
+  card.innerHTML=\`
+    <div class="card-chassi">\${v.chassi}</div>
+    <div class="card-sub">\${[v.modelo,v.cor].filter(Boolean).join(' · ')||'—'}</div>
+    <div class="card-sub">\${v.cliente||''}</div>
+    <div class="card-sub" style="color:#888;font-size:10px">🏪 \${nomeLoja(v.lojaId)}</div>
+    \${v.observacoes?\`<div class="card-sub" style="font-style:italic;color:#888;font-size:10px;margin-top:2px">📝 \${v.observacoes}</div>\`:''}
+    \${entregaBadge(v.dataEntrega)}
+    \${isParado?\`<div class="card-parado-label">🛑 Parado</div><div class="card-parado-motivo">\${v.paradoMotivo||''}</div>\`:''}
+    \${isConcluida&&!isParado?\`<div class="card-concluida-label">✅ Etapa concluída</div>\`:''}
+    \${hasHistory?\`<button class="btn-historico" onclick="openHistoricoModal('\${v.chassi}')">📋 Ver histórico</button>\`:''}
+    \${isEntregue?\`<div style="margin-top:8px;font-size:11px;color:#28a745;font-weight:600">👆 Clique para finalizar</div>\`:''}
+    \${podeOperar&&!isEntregue?\`<div class="etapa-check-row"><input type="checkbox" id="chk-\${v.chassi}" \${isConcluida?'checked':''} onchange="onEtapaConcluidaChange('\${v.chassi}',this)"/><label for="chk-\${v.chassi}">Etapa concluída</label></div>\`:''}
+    \${btnParar}\`;
+  if(isEntregue){
+    card.addEventListener('click',e=>{
+      if(e.target.tagName==='BUTTON'||e.target.tagName==='INPUT'||e.target.tagName==='LABEL')return;
+      if(userProfile&&userProfile.nivel==='admin')openFinalModal(v.chassi);
+      else if(userProfile&&userProfile.nivel==='gestor'&&(userProfile.lojas||[]).includes(v.lojaId))openFinalModal(v.chassi);
       else showToast('⛔ Apenas administradores podem finalizar.');
     });
-  } else if (isDraggable) {
-    card.addEventListener('dragstart', e => { dragSrcChassi = v.chassi; setTimeout(() => card.classList.add('dragging'), 0); e.dataTransfer.effectAllowed = 'move'; });
-    card.addEventListener('dragend', () => { card.classList.remove('dragging'); dragSrcChassi = null; });
+  }else if(isDraggable){
+    card.addEventListener('dragstart',e=>{
+      const vCheck=vehicles.find(x=>x.chassi===v.chassi);
+      if(!vCheck||!vCheck.etapaConcluida){e.preventDefault();showToast('⚠ Marque "Etapa concluída" antes de mover o card.');return;}
+      dragSrcChassi=v.chassi;setTimeout(()=>card.classList.add('dragging'),0);e.dataTransfer.effectAllowed='move';
+    });
+    card.addEventListener('dragend',()=>{card.classList.remove('dragging');dragSrcChassi=null;});
   }
   return card;
 }
-function renderKanban() {
-  const board = document.getElementById('board'); board.innerHTML = '';
-  const list = vehiclesFiltrados();
-  STAGES.forEach(stage => {
-    const isEntregue = stage === 'Entregue';
-    const items = list.filter(v => (v.status || 'Proposta') === stage);
-    const allowed = canMoveTo(stage);
-    const col = document.createElement('div');
-    col.className = 'col-wrap' + (isEntregue ? ' entregue-col' : '');
-    const lock = (!allowed && !isEntregue && userProfile && userProfile.nivel !== 'admin' && userProfile.nivel !== 'gestor') ? '<span class="col-lock">🔒</span>' : '';
-    col.innerHTML = `<div class="col-header">${stage} <span class="col-count">(${items.length})</span>${lock}</div>`;
-    const body = document.createElement('div');
-    body.className = 'col-body' + ((!allowed && !isEntregue) ? ' blocked' : '');
-    if (!items.length) body.innerHTML = '<div class="empty-col">vazio</div>';
-    else items.forEach(v => body.appendChild(buildCard(v)));
-    const accept = isEntregue ? (userProfile && (userProfile.nivel === 'admin' || userProfile.nivel === 'gestor')) : allowed;
-    body.addEventListener('dragover', e => { e.preventDefault(); if (accept) body.classList.add('drag-over'); });
-    body.addEventListener('dragleave', () => body.classList.remove('drag-over'));
-    body.addEventListener('drop', e => {
-      e.preventDefault(); body.classList.remove('drag-over');
-      if (!dragSrcChassi) return;
-      if (!accept) { showToast('⛔ Sem permissão.'); return; }
-      const v = vehicles.find(x => x.chassi === dragSrcChassi);
-      if (!v || v.status === stage) return;
-      openModal(v.chassi, stage);
+function renderKanban(){
+  const board=document.getElementById('board');board.innerHTML='';
+  const list=vehiclesFiltrados();
+  STAGES.forEach(stage=>{
+    const isEntregue=stage==='Entregue';
+    const items=list.filter(v=>(v.status||'Proposta')===stage);
+    const allowed=canMoveTo(stage);
+    const col=document.createElement('div');
+    col.className='col-wrap'+(isEntregue?' entregue-col':'');
+    const lock=!allowed&&!isEntregue&&userProfile&&userProfile.nivel!=='admin'&&userProfile.nivel!=='gestor'?'<span class="col-lock">🔒</span>':'';
+    col.innerHTML=\`<div class="col-header">\${stage} <span class="col-count">(\${items.length})</span>\${lock}</div>\`;
+    const body=document.createElement('div');
+    body.className='col-body'+((!allowed&&!isEntregue)?' blocked':'');
+    if(!items.length)body.innerHTML='<div class="empty-col">vazio</div>';
+    else items.forEach(v=>body.appendChild(buildCard(v)));
+    const accept=isEntregue?(userProfile&&userProfile.nivel==='admin'):allowed;
+    body.addEventListener('dragover',e=>{e.preventDefault();if(accept)body.classList.add('drag-over');});
+    body.addEventListener('dragleave',()=>body.classList.remove('drag-over'));
+    body.addEventListener('drop',e=>{
+      e.preventDefault();body.classList.remove('drag-over');
+      if(!dragSrcChassi)return;
+      if(!accept){showToast('⛔ Sem permissão.');return;}
+      const v=vehicles.find(x=>x.chassi===dragSrcChassi);
+      if(!v||v.status===stage)return;
+      if(!v.etapaConcluida){showToast('⚠ Marque "Etapa concluída" antes de mover o card.');return;}
+      openModal(v.chassi,stage);
     });
-    col.appendChild(body); board.appendChild(col);
+    col.appendChild(body);board.appendChild(col);
   });
 }
 
-// ============================================================
-// MODAL MOVER
-// ============================================================
-window.openModal = (chassi, toStage) => {
-  const si = STAGES.indexOf(toStage);
-  const v  = vehicles.find(x => x.chassi === chassi);
-  pendingMove = {chassi, toStage};
-  document.getElementById('modalTitle').textContent = `Confirmar início em "${toStage}"`;
-  document.getElementById('modalChassi').textContent = chassi + (v && v.modelo ? ' — ' + v.modelo : '') + (v && v.cliente ? ' / ' + v.cliente : '');
-  const badge = document.getElementById('modalStageBadge');
-  badge.textContent = toStage; badge.style.background = BADGE_BG[si] || '#eee'; badge.style.color = BADGE_FG[si] || '#333';
+// ── MODAL MOVER ──────────────────────────────────────────────
+window.openModal=(chassi,toStage)=>{
+  const si=STAGES.indexOf(toStage);
+  const v=vehicles.find(x=>x.chassi===chassi);
+  pendingMove={chassi,toStage};
+  document.getElementById('modalTitle').textContent=\`Confirmar início em "\${toStage}"\`;
+  document.getElementById('modalChassi').textContent=chassi+(v&&v.modelo?' — '+v.modelo:'')+(v&&v.cliente?' / '+v.cliente:'');
+  const badge=document.getElementById('modalStageBadge');
+  badge.textContent=toStage;badge.style.background=BADGE_BG[si]||'#eee';badge.style.color=BADGE_FG[si]||'#333';
   document.getElementById('modalOverlay').classList.add('open');
 };
-window.closeModal = () => { document.getElementById('modalOverlay').classList.remove('open'); pendingMove = null; };
-window.confirmMove = async () => {
-  if (!pendingMove) return;
-  const {chassi, toStage} = pendingMove;
-  const v = vehicles.find(x => x.chassi === chassi);
-  if (!v) { closeModal(); return; }
-  const now = new Date().toISOString();
-  const history = [...(v.history || [])];
-  const last = history.find(h => h.stage === v.status && !h.leftAt);
-  if (last) last.leftAt = now;
-  else if (!history.some(h => h.stage === v.status)) history.push({stage: v.status, enteredAt: v.statusSince || now, leftAt: now});
-  history.push({stage: toStage, enteredAt: now, leftAt: ''});
+window.closeModal=()=>{document.getElementById('modalOverlay').classList.remove('open');pendingMove=null;};
+window.confirmMove=async()=>{
+  if(!pendingMove)return;
+  const{chassi,toStage}=pendingMove;
+  const v=vehicles.find(x=>x.chassi===chassi);
+  if(!v){closeModal();return;}
+  const now=new Date().toISOString();
+  const history=[...(v.history||[])];
+  const last=history.find(h=>h.stage===v.status&&!h.leftAt);
+  if(last)last.leftAt=now;
+  else if(!history.some(h=>h.stage===v.status))history.push({stage:v.status,enteredAt:v.statusSince||now,leftAt:now});
+  history.push({stage:toStage,enteredAt:now,leftAt:''});
   closeModal();
-  await saveVehicle({...v, status: toStage, statusSince: now, history});
-  // Atualiza local
-  const idx = vehicles.findIndex(x => x.chassi === chassi);
-  if (idx >= 0) vehicles[idx] = {...v, status: toStage, statusSince: now, history};
-  renderKanban(); renderTable(); renderCalendar();
-  showToast(`✔ ${chassi} → ${toStage}`);
+  await saveVehicle({...v,status:toStage,statusSince:now,etapaConcluida:false,history});
+  showToast(\`✔ \${chassi} → \${toStage}\`);
 };
-document.getElementById('modalOverlay').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+document.getElementById('modalOverlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
 
-// ============================================================
-// MODAL FINALIZAR
-// ============================================================
-window.openFinalModal = chassi => {
-  const v = vehicles.find(x => x.chassi === chassi);
-  pendingFinal = chassi;
-  document.getElementById('finalChassi').textContent = chassi + (v && v.modelo ? ' — ' + v.modelo : '') + (v && v.cliente ? ' / ' + v.cliente : '');
+// ── MODAL FINALIZAR ───────────────────────────────────────────
+window.openFinalModal=chassi=>{
+  const v=vehicles.find(x=>x.chassi===chassi);
+  pendingFinal=chassi;
+  document.getElementById('finalChassi').textContent=chassi+(v&&v.modelo?' — '+v.modelo:'')+(v&&v.cliente?' / '+v.cliente:'');
   document.getElementById('modalFinalOverlay').classList.add('open');
 };
-window.closeFinalModal = () => { document.getElementById('modalFinalOverlay').classList.remove('open'); pendingFinal = null; };
-window.confirmFinal = async () => {
-  if (!pendingFinal) return;
-  const v = vehicles.find(x => x.chassi === pendingFinal);
-  if (!v) { closeFinalModal(); return; }
-  const now = new Date().toISOString();
-  const history = [...(v.history || [])];
-  const last = history.find(h => h.stage === v.status && !h.leftAt);
-  if (last) last.leftAt = now;
-  const histRows = history.filter(h => h.stage && h.enteredAt).map(h => ({
-    chassi: v.chassi, modelo: v.modelo || '', cliente: v.cliente || '',
-    lojaId: v.lojaId || '', lojaNome: nomeLoja(v.lojaId),
-    etapa: h.stage + (h.motivo ? ' — ' + h.motivo : ''), inicio: h.enteredAt, fim: h.leftAt || now,
-    duracao: durationStr(h.enteredAt, h.leftAt || now), dataEntrega: v.dataEntrega || '', situacao: 'Finalizado'
+window.closeFinalModal=()=>{document.getElementById('modalFinalOverlay').classList.remove('open');pendingFinal=null;};
+window.confirmFinal=async()=>{
+  if(!pendingFinal)return;
+  const v=vehicles.find(x=>x.chassi===pendingFinal);
+  if(!v){closeFinalModal();return;}
+  const now=new Date().toISOString();
+  const history=[...(v.history||[])];
+  const last=history.find(h=>h.stage===v.status&&!h.leftAt);
+  if(last)last.leftAt=now;
+  const histRows=history.filter(h=>h.stage&&h.enteredAt).map(h=>({
+    chassi:v.chassi,modelo:v.modelo||'',cliente:v.cliente||'',lojaId:v.lojaId||'',lojaNome:nomeLoja(v.lojaId),
+    etapa:h.stage+(h.motivo?' — '+h.motivo:''),inicio:h.enteredAt,fim:h.leftAt||now,
+    duracao:durationStr(h.enteredAt,h.leftAt||now),dataEntrega:v.dataEntrega||'',situacao:'Finalizado'
   }));
   await saveHistorico(histRows);
   await deleteVehicle(pendingFinal);
-  vehicles = vehicles.filter(x => x.chassi !== pendingFinal);
   closeFinalModal();
-  renderKanban(); renderTable(); renderCalendar();
-  showToast(`🏁 ${v.chassi} finalizado!`);
+  showToast(\`🏁 \${v.chassi} finalizado!\`);
 };
-document.getElementById('modalFinalOverlay').addEventListener('click', function(e) { if (e.target === this) closeFinalModal(); });
+document.getElementById('modalFinalOverlay').addEventListener('click',function(e){if(e.target===this)closeFinalModal();});
 
-// ============================================================
-// PARAR / RETOMAR
-// ============================================================
-window.openPararModal = chassi => {
-  const v = vehicles.find(x => x.chassi === chassi);
-  pendingParar = chassi;
-  document.getElementById('pararChassi').textContent = chassi + (v && v.modelo ? ' — ' + v.modelo : '');
-  document.getElementById('pararMotivo').value = '';
+// ── PARAR / RETOMAR ───────────────────────────────────────────
+window.openPararModal=chassi=>{
+  const v=vehicles.find(x=>x.chassi===chassi);
+  pendingParar=chassi;
+  document.getElementById('pararChassi').textContent=chassi+(v&&v.modelo?' — '+v.modelo:'');
+  document.getElementById('pararMotivo').value='';
   document.getElementById('modalPararOverlay').classList.add('open');
-  setTimeout(() => document.getElementById('pararMotivo').focus(), 100);
+  setTimeout(()=>document.getElementById('pararMotivo').focus(),100);
 };
-window.closePararModal = () => { document.getElementById('modalPararOverlay').classList.remove('open'); pendingParar = null; };
-window.confirmParar = async () => {
-  const motivo = document.getElementById('pararMotivo').value.trim();
-  if (!motivo) { showToast('⚠ Informe o motivo.'); return; }
-  const v = vehicles.find(x => x.chassi === pendingParar);
-  if (!v) { closePararModal(); return; }
-  const now = new Date().toISOString();
-  const history = [...(v.history || []), {stage: '⏸ PARADO', enteredAt: now, leftAt: '', motivo}];
-  await saveVehicle({...v, parado: true, paradoMotivo: motivo, history});
-  const idx = vehicles.findIndex(x => x.chassi === pendingParar);
-  if (idx >= 0) vehicles[idx] = {...v, parado: true, paradoMotivo: motivo, history};
-  closePararModal(); renderKanban();
-  showToast(`🛑 ${v.chassi} pausado.`);
+window.closePararModal=()=>{document.getElementById('modalPararOverlay').classList.remove('open');pendingParar=null;};
+window.confirmParar=async()=>{
+  const motivo=document.getElementById('pararMotivo').value.trim();
+  if(!motivo){showToast('⚠ Informe o motivo.');return;}
+  const v=vehicles.find(x=>x.chassi===pendingParar);
+  if(!v){closePararModal();return;}
+  const now=new Date().toISOString();
+  const history=[...(v.history||[]),{stage:'⏸ PARADO',enteredAt:now,leftAt:'',motivo}];
+  await saveVehicle({...v,parado:true,paradoMotivo:motivo,history});
+  closePararModal();
+  showToast(\`🛑 \${v.chassi} pausado.\`);
 };
-document.getElementById('modalPararOverlay').addEventListener('click', function(e) { if (e.target === this) closePararModal(); });
+document.getElementById('modalPararOverlay').addEventListener('click',function(e){if(e.target===this)closePararModal();});
 
-window.openRetomarModal = chassi => {
-  const v = vehicles.find(x => x.chassi === chassi);
-  pendingRetomar = chassi;
-  document.getElementById('retomarChassi').textContent = chassi + (v && v.modelo ? ' — ' + v.modelo : '');
-  document.getElementById('retomarMotivoLabel').textContent = v && v.paradoMotivo ? 'Motivo: ' + v.paradoMotivo : '';
+window.openRetomarModal=chassi=>{
+  const v=vehicles.find(x=>x.chassi===chassi);
+  pendingRetomar=chassi;
+  document.getElementById('retomarChassi').textContent=chassi+(v&&v.modelo?' — '+v.modelo:'');
+  document.getElementById('retomarMotivoLabel').textContent=v&&v.paradoMotivo?'Motivo: '+v.paradoMotivo:'';
   document.getElementById('modalRetomarOverlay').classList.add('open');
 };
-window.closeRetomarModal = () => { document.getElementById('modalRetomarOverlay').classList.remove('open'); pendingRetomar = null; };
-window.confirmRetomar = async () => {
-  const v = vehicles.find(x => x.chassi === pendingRetomar);
-  if (!v) { closeRetomarModal(); return; }
-  const now = new Date().toISOString();
-  const history = [...(v.history || [])];
-  const lp = history.slice().reverse().find(h => h.stage === '⏸ PARADO' && !h.leftAt);
-  if (lp) lp.leftAt = now;
-  history.push({stage: '▶ RETOMADO', enteredAt: now, leftAt: now});
-  await saveVehicle({...v, parado: false, paradoMotivo: '', history});
-  const idx = vehicles.findIndex(x => x.chassi === pendingRetomar);
-  if (idx >= 0) vehicles[idx] = {...v, parado: false, paradoMotivo: '', history};
-  closeRetomarModal(); renderKanban();
-  showToast(`▶ ${v.chassi} retomado!`);
+window.closeRetomarModal=()=>{document.getElementById('modalRetomarOverlay').classList.remove('open');pendingRetomar=null;};
+window.confirmRetomar=async()=>{
+  const v=vehicles.find(x=>x.chassi===pendingRetomar);
+  if(!v){closeRetomarModal();return;}
+  const now=new Date().toISOString();
+  const history=[...(v.history||[])];
+  const lp=history.slice().reverse().find(h=>h.stage==='⏸ PARADO'&&!h.leftAt);
+  if(lp)lp.leftAt=now;
+  history.push({stage:'▶ RETOMADO',enteredAt:now,leftAt:now});
+  await saveVehicle({...v,parado:false,paradoMotivo:'',history});
+  closeRetomarModal();
+  showToast(\`▶ \${v.chassi} retomado!\`);
 };
-document.getElementById('modalRetomarOverlay').addEventListener('click', function(e) { if (e.target === this) closeRetomarModal(); });
+document.getElementById('modalRetomarOverlay').addEventListener('click',function(e){if(e.target===this)closeRetomarModal();});
 
-// ============================================================
-// REPROGRAMAR
-// ============================================================
-window.openReprogramarModal = chassi => {
-  const v = vehicles.find(x => x.chassi === chassi); if (!v) return;
-  pendingReprog = chassi;
-  document.getElementById('reprogramarChassi').textContent = chassi + (v.modelo ? ' — ' + v.modelo : '');
-  document.getElementById('reprogramarDataAtual').textContent = v.dataEntrega ? 'Data atual: ' + fmtDate(v.dataEntrega) : 'Sem data agendada';
-  document.getElementById('reprogramarNovaData').value = v.dataEntrega || '';
-  document.getElementById('reprogramarMotivo').value = '';
+// ── REPROGRAMAR ───────────────────────────────────────────────
+window.openReprogramarModal=chassi=>{
+  const v=vehicles.find(x=>x.chassi===chassi);if(!v)return;
+  pendingReprog=chassi;
+  document.getElementById('reprogramarChassi').textContent=chassi+(v.modelo?' — '+v.modelo:'');
+  document.getElementById('reprogramarDataAtual').textContent=v.dataEntrega?'Data atual: '+fmtDate(v.dataEntrega):'Sem data agendada';
+  document.getElementById('reprogramarNovaData').value=v.dataEntrega||'';
+  document.getElementById('reprogramarMotivo').value='';
   document.getElementById('modalReprogramarOverlay').classList.add('open');
-  setTimeout(() => document.getElementById('reprogramarNovaData').focus(), 100);
+  setTimeout(()=>document.getElementById('reprogramarNovaData').focus(),100);
 };
-window.closeReprogramarModal = () => { document.getElementById('modalReprogramarOverlay').classList.remove('open'); pendingReprog = null; };
-window.confirmReprogramar = async () => {
-  const novaData = document.getElementById('reprogramarNovaData').value;
-  if (!novaData) { showToast('⚠ Informe a nova data.'); return; }
-  const v = vehicles.find(x => x.chassi === pendingReprog);
-  if (!v) { closeReprogramarModal(); return; }
-  const motivo = document.getElementById('reprogramarMotivo').value.trim();
-  const now = new Date().toISOString();
-  const history = [...(v.history || []), {
-    stage: '📅 REPROGRAMADO', enteredAt: now, leftAt: now,
-    motivo: `De ${fmtDate(v.dataEntrega || '(sem data)')} para ${fmtDate(novaData)}${motivo ? ' — ' + motivo : ''}`
-  }];
-  await saveVehicle({...v, dataEntrega: novaData, history});
-  const idx = vehicles.findIndex(x => x.chassi === pendingReprog);
-  if (idx >= 0) vehicles[idx] = {...v, dataEntrega: novaData, history};
-  closeReprogramarModal(); renderCalendar(); renderTable();
-  showToast(`📅 ${v.chassi} → ${fmtDate(novaData)}`);
+window.closeReprogramarModal=()=>{document.getElementById('modalReprogramarOverlay').classList.remove('open');pendingReprog=null;};
+window.confirmReprogramar=async()=>{
+  const novaData=document.getElementById('reprogramarNovaData').value;
+  if(!novaData){showToast('⚠ Informe a nova data.');return;}
+  const v=vehicles.find(x=>x.chassi===pendingReprog);
+  if(!v){closeReprogramarModal();return;}
+  const motivo=document.getElementById('reprogramarMotivo').value.trim();
+  const now=new Date().toISOString();
+  const history=[...(v.history||[]),{stage:'📅 REPROGRAMADO',enteredAt:now,leftAt:now,
+    motivo:\`De \${fmtDate(v.dataEntrega||'(sem data)')} para \${fmtDate(novaData)}\${motivo?' — '+motivo:''}\`}];
+  await saveVehicle({...v,dataEntrega:novaData,history});
+  closeReprogramarModal();
+  showToast(\`📅 \${v.chassi} → \${fmtDate(novaData)}\`);
 };
-document.getElementById('modalReprogramarOverlay').addEventListener('click', function(e) { if (e.target === this) closeReprogramarModal(); });
+document.getElementById('modalReprogramarOverlay').addEventListener('click',function(e){if(e.target===this)closeReprogramarModal();});
 
-// ============================================================
-// ADD VEÍCULO
-// ============================================================
-window.showAddModal = () => {
-  ['nC','nM','nCo','nCl','nV','nE'].forEach(id => document.getElementById(id).value = '');
-  const sel = document.getElementById('nLoja'); sel.innerHTML = '';
-  const isGestor = userProfile.nivel === 'admin' || userProfile.nivel === 'gestor';
-  const lojasDisp = isGestor ? lojas : lojas.filter(l => (userProfile.lojas || []).includes(l.id));
-  lojasDisp.forEach(l => { const o = document.createElement('option'); o.value = l.id; o.textContent = l.nome; sel.appendChild(o); });
-  if (lojaAtiva && lojaAtiva !== 'todas') sel.value = lojaAtiva;
-  document.getElementById('modalAddOverlay').classList.add('open');
-  setTimeout(() => document.getElementById('nC').focus(), 100);
+// ── HISTÓRICO MODAL ───────────────────────────────────────────
+window.openHistoricoModal=chassi=>{
+  const v=vehicles.find(x=>x.chassi===chassi);if(!v)return;
+  document.getElementById('histModalTitle').textContent=\`Histórico — \${chassi}\`;
+  const hist=v.history||[];
+  const tbody=document.getElementById('histModalBody');
+  if(!hist.length){tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px">Sem registros.</td></tr>';}
+  else tbody.innerHTML=hist.map(h=>{
+    const si=STAGES.indexOf(h.stage);
+    return\`<tr>
+      <td>
+        <span class="badge \${si>=0?STAGE_CLS[si]:'b0'}">\${h.stage}</span>
+        \${h.motivo?\`<div style="font-size:10px;color:#888;margin-top:3px">\${h.motivo}</div>\`:''}
+      </td>
+      <td>\${fmtDateTime(h.enteredAt)}</td>
+      <td>\${h.leftAt?fmtDateTime(h.leftAt):'<span style="color:#888;font-style:italic">Em andamento</span>'}</td>
+      <td>\${durationStr(h.enteredAt,h.leftAt||null)}</td>
+    </tr>\`;
+  }).join('');
+  document.getElementById('modalHistoricoOverlay').classList.add('open');
 };
-window.closeAddModal = () => document.getElementById('modalAddOverlay').classList.remove('open');
-document.getElementById('modalAddOverlay').addEventListener('click', function(e) { if (e.target === this) closeAddModal(); });
-window.addVehicle = async () => {
-  const chassi = document.getElementById('nC').value.trim();
-  const lojaId = document.getElementById('nLoja').value;
-  if (!chassi) { showToast('⚠ Informe o chassi.'); return; }
-  if (!lojaId)  { showToast('⚠ Selecione a loja.'); return; }
-  if (vehicles.find(v => v.chassi === chassi)) { showToast('⚠ Chassi já cadastrado!'); return; }
-  const now = new Date().toISOString();
-  const v = {
-    chassi, modelo: document.getElementById('nM').value.trim(), cor: document.getElementById('nCo').value.trim(),
-    cliente: document.getElementById('nCl').value.trim(), vendedor: document.getElementById('nV').value.trim(),
-    dataEntrega: document.getElementById('nE').value, lojaId,
-    status: 'Proposta', dataInicio: isoDate(new Date()), statusSince: now,
-    history: [{stage: 'Proposta', enteredAt: now, leftAt: ''}], parado: false, paradoMotivo: ''
-  };
+window.closeHistoricoModal=()=>document.getElementById('modalHistoricoOverlay').classList.remove('open');
+document.getElementById('modalHistoricoOverlay').addEventListener('click',function(e){if(e.target===this)closeHistoricoModal();});
+
+// ── ETAPA CONCLUÍDA ───────────────────────────────────────────
+window.onEtapaConcluidaChange=async(chassi,el)=>{
+  const v=vehicles.find(x=>x.chassi===chassi);if(!v)return;
+  if(el.checked){
+    el.checked=false; // revert until confirmed
+    pendingConcluida=chassi;
+    document.getElementById('concluidaChassi').textContent=chassi+(v.modelo?' — '+v.modelo:'');
+    document.getElementById('concluidaEtapa').textContent='Etapa atual: '+(v.status||'Proposta');
+    document.getElementById('modalConcluidaOverlay').classList.add('open');
+  }else{
+    const now=new Date().toISOString();
+    const history=[...(v.history||[]),{stage:'🔄 CONCLUÍDA DESMARCADA',enteredAt:now,leftAt:now,motivo:'Etapa '+v.status+' desmarcada como concluída'}];
+    await saveVehicle({...v,etapaConcluida:false,history});
+    showToast(\`🔄 \${chassi} — concluída desmarcada.\`);
+  }
+};
+window.cancelarConcluida=()=>{
+  document.getElementById('modalConcluidaOverlay').classList.remove('open');
+  pendingConcluida=null;
+};
+window.confirmConcluida=async()=>{
+  if(!pendingConcluida)return;
+  const v=vehicles.find(x=>x.chassi===pendingConcluida);
+  if(!v){cancelarConcluida();return;}
+  const now=new Date().toISOString();
+  const history=[...(v.history||[]),{stage:v.status+' — Etapa concluída',enteredAt:now,leftAt:now}];
+  await saveVehicle({...v,etapaConcluida:true,history});
+  cancelarConcluida();
+  showToast(\`✅ \${v.chassi} — etapa concluída!\`);
+};
+document.getElementById('modalConcluidaOverlay').addEventListener('click',function(e){if(e.target===this)cancelarConcluida();});
+
+// ── ADD VEÍCULO ───────────────────────────────────────────────
+window.showAddModal=()=>{
+  ['nC','nM','nCo','nCl','nV','nE'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('nObs').value='';
+  // Popula select de lojas disponíveis
+  const sel=document.getElementById('nLoja');
+  sel.innerHTML='';
+  const isGestor=userProfile.nivel==='admin';
+  const lojasDisp=isGestor?lojas:lojas.filter(l=>(userProfile.lojas||[]).includes(l.id));
+  lojasDisp.forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=l.nome;sel.appendChild(o);});
+  if(lojaAtiva&&lojaAtiva!=='todas') sel.value=lojaAtiva;
+  document.getElementById('modalAddOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('nC').focus(),100);
+};
+window.closeAddModal=()=>document.getElementById('modalAddOverlay').classList.remove('open');
+document.getElementById('modalAddOverlay').addEventListener('click',function(e){if(e.target===this)closeAddModal();});
+window.addVehicle=async()=>{
+  const chassi=document.getElementById('nC').value.trim();
+  const lojaId=document.getElementById('nLoja').value;
+  if(!chassi){showToast('⚠ Informe o chassi.');return;}
+  if(!lojaId){showToast('⚠ Selecione a loja.');return;}
+  if(vehicles.find(v=>v.chassi===chassi)){showToast('⚠ Chassi já cadastrado!');return;}
+  const now=new Date().toISOString();
+  const v={chassi,modelo:document.getElementById('nM').value.trim(),cor:document.getElementById('nCo').value.trim(),
+    cliente:document.getElementById('nCl').value.trim(),vendedor:document.getElementById('nV').value.trim(),
+    dataEntrega:document.getElementById('nE').value,observacoes:document.getElementById('nObs').value.trim(),lojaId,
+    status:'Proposta',dataInicio:isoDate(new Date()),statusSince:now,
+    history:[{stage:'Proposta',enteredAt:now,leftAt:''}],parado:false,paradoMotivo:''};
   closeAddModal();
   await saveVehicle(v);
-  vehicles.push(v);
-  renderKanban(); renderTable(); renderCalendar();
   showToast('✔ Veículo adicionado!');
 };
 
-// ============================================================
-// TABELA
-// ============================================================
-window.sortTable = col => { if (tableSortCol === col) tableSortAsc = !tableSortAsc; else { tableSortCol = col; tableSortAsc = true; } renderTable(); };
-function renderTable() {
-  const filter = (document.getElementById('filterInput').value || '').toLowerCase();
-  const list = vehiclesFiltrados();
-  const sorted = [...list].sort((a, b) => {
-    const colMap = {'pds_dataentrega':'dataEntrega','pds_datainicio':'dataInicio','pds_chassi':'chassi','pds_modelo':'modelo','pds_cor':'cor','pds_cliente':'cliente','pds_vendedor':'vendedor','pds_status':'status','pds_statussince':'statusSince'};
-    const field = colMap[tableSortCol] || tableSortCol;
-    if (field === 'dataEntrega' || field === 'dataInicio') {
-      const da = parseDate(a[field]), db = parseDate(b[field]);
-      if (!da && !db) return 0; if (!da) return 1; if (!db) return -1;
-      return tableSortAsc ? da - db : db - da;
+// ── TABELA ────────────────────────────────────────────────────
+window.sortTable=col=>{if(tableSortCol===col)tableSortAsc=!tableSortAsc;else{tableSortCol=col;tableSortAsc=true;}renderTable();};
+function renderTable(){
+  const filter=(document.getElementById('filterInput').value||'').toLowerCase();
+  const list=vehiclesFiltrados();
+  const sorted=[...list].sort((a,b)=>{
+    if(tableSortCol==='dataEntrega'||tableSortCol==='dataInicio'){
+      const da=parseDate(a[tableSortCol]),db=parseDate(b[tableSortCol]);
+      if(!da&&!db)return 0;if(!da)return 1;if(!db)return-1;return tableSortAsc?da-db:db-da;
     }
-    const va = (a[field] || '').toString().toLowerCase();
-    const vb = (b[field] || '').toString().toLowerCase();
-    return tableSortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+    const va=(a[tableSortCol]||'').toString().toLowerCase();
+    const vb=(b[tableSortCol]||'').toString().toLowerCase();
+    return tableSortAsc?va.localeCompare(vb):vb.localeCompare(va);
   });
-  const filtered = filter ? sorted.filter(v => v.chassi.toLowerCase().includes(filter)) : sorted;
-  document.getElementById('tCount').textContent = filtered.length + ' veículo(s)';
-  const tbody = document.getElementById('tbody');
-  if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="9" class="empty-table">Nenhum veículo.</td></tr>'; return; }
-  const now = today(); const si = s => Math.max(0, STAGES.indexOf(s || 'Proposta'));
-  tbody.innerHTML = filtered.map(v => {
-    const d = parseDate(v.dataEntrega); const late = d && d < now;
-    return `<tr class="${late ? 'late-row' : ''}">
-      <td><strong>${v.chassi}</strong></td>
-      <td>${v.modelo||'-'}</td><td>${v.cor||'-'}</td><td>${v.cliente||'-'}</td><td>${v.vendedor||'-'}</td>
-      <td>${fmtDate(v.dataInicio)}</td>
-      <td><span class="badge b${si(v.status)}">${v.status||'Proposta'}</span></td>
-      <td>${elapsedStr(v.statusSince)}</td>
-      <td>${late ? '<span style="color:#c62828;font-weight:600">⚠ ' + fmtDate(v.dataEntrega) + '</span>' : fmtDate(v.dataEntrega)}</td>
-    </tr>`;
+  const filtered=filter?sorted.filter(v=>v.chassi.toLowerCase().includes(filter)):sorted;
+  ['chassi','modelo','cor','cliente','vendedor','dataInicio','status','statusSince','dataEntrega'].forEach(c=>{
+    const el=document.getElementById('sort-'+c);if(el)el.textContent=c===tableSortCol?(tableSortAsc?' ▲':' ▼'):'';
+  });
+  document.getElementById('tCount').textContent=filtered.length+' veículo(s)';
+  const tbody=document.getElementById('tbody');
+  if(!filtered.length){tbody.innerHTML='<tr><td colspan="9" class="empty-table">Nenhum veículo.</td></tr>';return;}
+  const now=today();const si=s=>Math.max(0,STAGES.indexOf(s||'Proposta'));
+  tbody.innerHTML=filtered.map(v=>{
+    const d=parseDate(v.dataEntrega);const late=d&&d<now;
+    return\`<tr class="\${late?'late-row':''}">
+      <td><strong>\${v.chassi}</strong></td>
+      <td>\${v.modelo||'-'}</td><td>\${v.cor||'-'}</td><td>\${v.cliente||'-'}</td><td>\${v.vendedor||'-'}</td>
+      <td>\${fmtDate(v.dataInicio)}</td>
+      <td><span class="badge b\${si(v.status)}">\${v.status||'Proposta'}</span></td>
+      <td>\${elapsedStr(v.statusSince)}</td>
+      <td>\${late?'<span style="color:#c62828;font-weight:600">⚠ '+fmtDate(v.dataEntrega)+'</span>':fmtDate(v.dataEntrega)}</td>
+    </tr>\`;
   }).join('');
 }
 
-// ============================================================
-// CALENDÁRIO
-// ============================================================
-function renderCalendar() {
-  const board = document.getElementById('calBoard'); board.innerHTML = '';
-  const now = today();
-  const bizDays = businessDaysFromToday(7);
-  const bizIsos = bizDays.map(isoDate);
-  const cols = [
-    {key:'atraso', label:'Em Atraso', cls:'atraso', day:null},
-    ...bizDays.map(d => ({key: isoDate(d), label: d.toLocaleDateString('pt-BR',{weekday:'short'}), day: d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}), cls:''})),
-    {key:'futuras', label:'Futuras', cls:'futuras', day:null}
-  ];
-  const buckets = {}; cols.forEach(c => buckets[c.key] = []);
-  vehiclesFiltrados().forEach(v => {
-    const d = parseDate(v.dataEntrega);
-    if (!d) { buckets['futuras'].push(v); return; }
-    const dEff = nextBizDay(d); const iso = isoDate(dEff);
-    if (dEff < now) buckets['atraso'].push(v);
-    else if (bizIsos.includes(iso)) buckets[iso].push(v);
+// ── CALENDÁRIO ────────────────────────────────────────────────
+function renderCalendar(){
+  const board=document.getElementById('calBoard');board.innerHTML='';
+  const now=today();
+  const bizDays=businessDaysFromToday(7);
+  const bizIsos=bizDays.map(isoDate);
+  const cols=[{key:'atraso',label:'Em Atraso',cls:'atraso',day:null},
+    ...bizDays.map(d=>({key:isoDate(d),label:d.toLocaleDateString('pt-BR',{weekday:'short'}),day:d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}),cls:''})),
+    {key:'futuras',label:'Futuras',cls:'futuras',day:null}];
+  const buckets={};cols.forEach(c=>buckets[c.key]=[]);
+  vehiclesFiltrados().forEach(v=>{
+    const d=parseDate(v.dataEntrega);
+    if(!d){buckets['futuras'].push(v);return;}
+    const dEff=nextBizDay(d);const iso=isoDate(dEff);
+    if(dEff<now)buckets['atraso'].push(v);
+    else if(bizIsos.includes(iso))buckets[iso].push(v);
     else buckets['futuras'].push(v);
   });
-  Object.keys(buckets).forEach(k => buckets[k].sort((a,b) => { const da=parseDate(a.dataEntrega), db=parseDate(b.dataEntrega); if(!da&&!db)return 0; if(!da)return 1; if(!db)return-1; return da-db; }));
-  cols.forEach(c => {
-    const col = document.createElement('div'); col.className = 'cal-col' + (c.cls ? ' '+c.cls : '');
-    col.innerHTML = `<div class="cal-col-header">${c.label}${c.day ? '<br><span style="font-size:11px;font-weight:400;opacity:.8">'+c.day+'</span>' : ''}</div>`;
-    const items = buckets[c.key] || [];
-    if (!items.length) col.innerHTML += '<div class="cal-empty">—</div>';
-    else items.forEach(v => {
-      const card = document.createElement('div'); card.className = 'cal-card';
-      const podeReprog = userProfile && userProfile.nivel !== 'visualizador';
-      card.innerHTML = `<div class="chassi">${v.chassi}</div>
-        <div class="sub">${v.modelo||''} ${v.cor ? '· '+v.cor : ''}</div>
-        <div class="sub">${v.cliente||''}</div>
-        <div class="sub" style="color:#888;font-size:10px">🏪 ${nomeLoja(v.lojaId)}</div>
-        <div class="sub" style="margin-top:3px"><span class="badge b${Math.max(0,STAGES.indexOf(v.status||'Proposta'))}">${v.status||'Proposta'}</span></div>
-        ${podeReprog ? `<button class="btn-reprogramar" onclick="openReprogramarModal('${v.chassi}')">📅 Reprogramar</button>` : ''}`;
+  Object.keys(buckets).forEach(k=>buckets[k].sort((a,b)=>{const da=parseDate(a.dataEntrega),db=parseDate(b.dataEntrega);if(!da&&!db)return 0;if(!da)return 1;if(!db)return-1;return da-db;}));
+  cols.forEach(c=>{
+    const col=document.createElement('div');col.className='cal-col'+(c.cls?' '+c.cls:'');
+    col.innerHTML=\`<div class="cal-col-header">\${c.label}\${c.day?'<br><span style="font-size:11px;font-weight:400;opacity:.8">'+c.day+'</span>':''}</div>\`;
+    const items=buckets[c.key]||[];
+    if(!items.length)col.innerHTML+='<div class="cal-empty">—</div>';
+    else items.forEach(v=>{
+      const card=document.createElement('div');card.className='cal-card';
+      const podeReprog=userProfile&&userProfile.nivel!=='visualizador';
+      card.innerHTML=\`<div class="chassi">\${v.chassi}</div>
+        <div class="sub">\${v.modelo||''} \${v.cor?'· '+v.cor:''}</div>
+        <div class="sub">\${v.cliente||''}</div>
+        <div class="sub" style="color:#888;font-size:10px">🏪 \${nomeLoja(v.lojaId)}</div>
+        <div class="sub" style="margin-top:3px"><span class="badge b\${Math.max(0,STAGES.indexOf(v.status||'Proposta'))}">\${v.status||'Proposta'}</span></div>
+        \${podeReprog?\`<button class="btn-reprogramar" onclick="openReprogramarModal('\${v.chassi}')">📅 Reprogramar</button>\`:''}\`;
       col.appendChild(card);
     });
     board.appendChild(col);
   });
 }
 
-// ============================================================
-// RELATÓRIO
-// ============================================================
-window.renderRelatorio = async () => {
-  const filChassi = (document.getElementById('relChassi').value || '').toLowerCase().trim();
-  const filDe = document.getElementById('relDtDe').value;
-  const filAte = document.getElementById('relDtAte').value;
-  setMsg('Carregando relatório...', '');
-  const histRaw = await dvGet(TABLES.historico);
-  const histDocs = histRaw.map(h => ({
-    chassi: h.pds_chassi, modelo: h.pds_modelo||'', cliente: h.pds_cliente||'',
-    lojaId: h.pds_lojaid_ref||'', lojaNome: h.pds_lojaNome||'',
-    etapa: h.pds_etapa||'', inicio: h.pds_inicio||'', fim: h.pds_fim||'',
-    duracao: h.pds_duracao||'', dataEntrega: h.pds_dataentrega||'', situacao: h.pds_situacao||''
-  }));
-  let rows = [];
-  vehiclesFiltrados().forEach(v => {
-    (v.history || []).forEach(h => {
-      rows.push({chassi:v.chassi, modelo:v.modelo||'', cliente:v.cliente||'',
-        lojaId:v.lojaId||'', lojaNome:nomeLoja(v.lojaId), etapa:h.stage, inicio:h.enteredAt, fim:h.leftAt||'',
-        duracao:durationStr(h.enteredAt,h.leftAt||null), duracaoMin:durationMinutes(h.enteredAt,h.leftAt||null),
-        dataEntrega:v.dataEntrega||'', situacao:'Em processo'});
+// ── RELATÓRIO ─────────────────────────────────────────────────
+window.renderRelatorio=async()=>{
+  const filChassi=(document.getElementById('relChassi').value||'').toLowerCase().trim();
+  const filDe=document.getElementById('relDtDe').value;
+  const filAte=document.getElementById('relDtAte').value;
+  const histDocs=await loadHistoricoData();
+  let rows=[];
+  vehiclesFiltrados().forEach(v=>{
+    (v.history||[]).forEach(h=>{
+      rows.push({chassi:v.chassi,modelo:v.modelo||'',cliente:v.cliente||'',
+        lojaId:v.lojaId||'',lojaNome:nomeLoja(v.lojaId),
+        etapa:h.stage,inicio:h.enteredAt,fim:h.leftAt||'',
+        duracao:durationStr(h.enteredAt,h.leftAt||null),
+        duracaoMin:durationMinutes(h.enteredAt,h.leftAt||null),
+        dataEntrega:v.dataEntrega||'',situacao:'Em processo'});
     });
   });
-  histDocs.filter(h => !lojaAtiva || lojaAtiva==='todas' || h.lojaId===lojaAtiva).forEach(h => {
-    rows.push({...h, duracaoMin:durationMinutes(h.inicio,h.fim)});
+  histDocs.filter(h=>!lojaAtiva||lojaAtiva==='todas'||h.lojaId===lojaAtiva).forEach(h=>{
+    rows.push({chassi:h.chassi,modelo:h.modelo||'',cliente:h.cliente||'',
+      lojaId:h.lojaId||'',lojaNome:h.lojaNome||nomeLoja(h.lojaId),
+      etapa:h.etapa,inicio:h.inicio,fim:h.fim,
+      duracao:h.duracao||durationStr(h.inicio,h.fim),
+      duracaoMin:durationMinutes(h.inicio,h.fim),
+      dataEntrega:h.dataEntrega||'',situacao:'Finalizado'});
   });
-  if (filChassi) rows = rows.filter(r => r.chassi.toLowerCase().includes(filChassi));
-  if (filDe||filAte) rows = rows.filter(r => {
-    const ref = r.dataEntrega ? isoDate(parseDate(r.dataEntrega)||new Date(0)) : (r.fim?r.fim.slice(0,10):'');
-    if (!ref) return false;
-    if (filDe && ref < filDe) return false;
-    if (filAte && ref > filAte) return false;
-    return true;
-  });
-  rows.sort((a,b) => a.chassi.localeCompare(b.chassi) || a.inicio.localeCompare(b.inicio));
-  document.getElementById('relSummary').textContent = `${rows.length} registro(s)`;
-  setMsg('Conectado ao Dataverse', 'ok');
-  const tbody = document.getElementById('relBody');
-  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="9" class="empty-table">Nenhum registro.</td></tr>'; return; }
-  tbody.innerHTML = rows.map(r => `<tr>
-    <td><strong>${r.chassi}</strong></td><td>${r.modelo||'-'}</td><td>${r.cliente||'-'}</td>
-    <td><span class="chip">${r.lojaNome||'-'}</span></td>
-    <td><span class="badge b${Math.max(0,STAGES.indexOf(r.etapa))}">${r.etapa||'-'}</span></td>
-    <td>${fmtDateTime(r.inicio)}</td>
-    <td>${r.fim?fmtDateTime(r.fim):'<span style="color:#888;font-style:italic">Em andamento</span>'}</td>
-    <td><span class="duration-pill${r.duracaoMin>2880?' long':''}">${r.duracao||'-'}</span></td>
-    <td>${r.situacao==='Finalizado'?'<span class="status-finalizado">✔ Finalizado</span>':'<span class="status-em-processo">⏳ Em processo</span>'}</td>
-  </tr>`).join('');
-  window._relRows = rows;
+  if(filChassi)rows=rows.filter(r=>r.chassi.toLowerCase().includes(filChassi));
+  if(filDe||filAte){
+    rows=rows.filter(r=>{
+      const ref=r.dataEntrega?isoDate(parseDate(r.dataEntrega)||new Date(0)):(r.fim?r.fim.slice(0,10):'');
+      if(!ref)return false;
+      if(filDe&&ref<filDe)return false;
+      if(filAte&&ref>filAte)return false;
+      return true;
+    });
+  }
+  rows.sort((a,b)=>a.chassi.localeCompare(b.chassi)||a.inicio.localeCompare(b.inicio));
+  document.getElementById('relSummary').textContent=\`\${rows.length} registro(s)\`;
+  const tbody=document.getElementById('relBody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="9" class="empty-table">Nenhum registro.</td></tr>';return;}
+  tbody.innerHTML=rows.map(r=>\`<tr>
+    <td><strong>\${r.chassi}</strong></td><td>\${r.modelo||'-'}</td><td>\${r.cliente||'-'}</td>
+    <td><span class="chip">\${r.lojaNome||'-'}</span></td>
+    <td><span class="badge b\${Math.max(0,STAGES.indexOf(r.etapa))}">\${r.etapa||'-'}</span></td>
+    <td>\${fmtDateTime(r.inicio)}</td>
+    <td>\${r.fim?fmtDateTime(r.fim):'<span style="color:#888;font-style:italic">Em andamento</span>'}</td>
+    <td><span class="duration-pill\${r.duracaoMin>2880?' long':''}">\${r.duracao||'-'}</span></td>
+    <td>\${r.situacao==='Finalizado'?'<span class="status-finalizado">✔ Finalizado</span>':'<span class="status-em-processo">⏳ Em processo</span>'}</td>
+  </tr>\`).join('');
+  window._relRows=rows;
 };
-window.limparFiltrosRel = () => {
-  ['relChassi','relDtDe','relDtAte'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('relBody').innerHTML = '';
-  document.getElementById('relSummary').textContent = '';
-  window._relRows = [];
+window.limparFiltrosRel=()=>{
+  ['relChassi','relDtDe','relDtAte'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('relBody').innerHTML='';
+  document.getElementById('relSummary').textContent='';window._relRows=[];
 };
-window.exportarExcel = () => {
-  const rows = window._relRows || [];
-  if (!rows.length) { showToast('Faça uma pesquisa antes de exportar.'); return; }
-  const header = ['Chassi','Modelo','Cliente','Loja','Etapa','Início','Fim','Duração','Situação'];
-  const csv = '\uFEFF' + [header, ...rows.map(r => [
-    r.chassi, r.modelo, r.cliente, r.lojaNome, r.etapa,
-    fmtDateTime(r.inicio), r.fim ? fmtDateTime(r.fim) : 'Em andamento', r.duracao, r.situacao
-  ])].map(row => row.map(c => '"' + (c+'').replace(/"/g,'""') + '"').join(';')).join('\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
-  a.download = 'relatorio_pds_' + isoDate(new Date()) + '.csv'; a.click();
+window.exportarExcel=()=>{
+  const rows=window._relRows||[];
+  if(!rows.length){showToast('Faça uma pesquisa antes de exportar.');return;}
+  const header=['Chassi','Modelo','Cliente','Loja','Etapa','Início','Fim','Duração','Situação'];
+  const csv='\\uFEFF'+[header,...rows.map(r=>[r.chassi,r.modelo,r.cliente,r.lojaNome,r.etapa,
+    fmtDateTime(r.inicio),r.fim?fmtDateTime(r.fim):'Em andamento',r.duracao,r.situacao])]
+    .map(row=>row.map(c=>'"'+(c+'').replace(/"/g,'""')+'"').join(';')).join('\\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download='relatorio_pds_'+isoDate(new Date())+'.csv';a.click();
   showToast('✔ Exportado!');
 };
 
-// ============================================================
-// ADMIN
-// ============================================================
-async function renderAdmin() {
+// ── ADMIN ─────────────────────────────────────────────────────
+async function renderAdmin(){
   await renderAdminLojas();
   await renderAdminUsuarios();
   buildAdminUserLojas();
   buildAdminUserEtapas();
 }
-async function renderAdminLojas() {
-  const raw = await dvGet(TABLES.lojas);
-  lojas = raw.map(l => ({id: l.pds_lojaid, nome: l.pds_nome, ativa: l.pds_ativa !== false}));
-  const list = document.getElementById('adminLojaList');
-  list.innerHTML = lojas.length ? lojas.map(l => `
+async function renderAdminLojas(){
+  const raw=await dvGet(TABLES.lojas);
+  lojas=raw.map(l=>({id:l.pds_lojaid,nome:l.pds_nome,ativa:l.pds_ativa!==false}));
+  const list=document.getElementById('adminLojaList');
+  list.innerHTML=lojas.length?lojas.map(l=>\`
     <div class="admin-item">
       <div class="item-info">
-        <div class="item-name">🏪 ${l.nome}</div>
-        <div class="item-sub">${l.ativa ? '<span style="color:#2e7d32">Ativa</span>' : '<span style="color:#c62828">Inativa</span>'}</div>
+        <div class="item-name">🏪 \${l.nome}</div>
+        <div class="item-sub">ID: \${l.id} · \${l.ativa!==false?'<span style="color:#2e7d32">Ativa</span>':'<span style="color:#c62828">Inativa</span>'}</div>
       </div>
       <div class="item-actions">
-        <button class="sm danger" onclick="toggleLoja('${l.id}',${l.ativa})">${l.ativa ? 'Desativar' : 'Ativar'}</button>
+        <button class="sm danger" onclick="toggleLoja('\${l.id}',\${l.ativa!==false})">\${l.ativa!==false?'Desativar':'Ativar'}</button>
       </div>
-    </div>`).join('') : '<div style="font-size:12px;color:#aaa;text-align:center;padding:12px">Nenhuma loja cadastrada.</div>';
+    </div>\`).join(''):'<div style="font-size:12px;color:#aaa;text-align:center;padding:12px">Nenhuma loja cadastrada.</div>';
 }
-async function renderAdminUsuarios() {
-  const raw = await dvGet(TABLES.usuarios);
-  todosUsuarios = raw.map(u => ({
-    id: u.pds_usuarioid, email: (u.pds_email||'').toLowerCase(),
-    nivel: u.pds_nivel||'visualizador',
-    lojas: JSON.parse(u.pds_lojas||'[]'),
-    etapas: JSON.parse(u.pds_etapas||'[]')
-  }));
-  const list = document.getElementById('adminUserList');
-  list.innerHTML = todosUsuarios.length ? todosUsuarios.map(u => {
-    const lojasU = (u.lojas||[]).map(id => nomeLoja(id)).join(', ') || '—';
-    return `<div class="admin-item">
+async function renderAdminUsuarios(){
+  const raw=await dvGet(TABLES.usuarios);
+  todosUsuarios=raw.map(u=>({id:u.pds_usuarioid,email:(u.pds_email||'').toLowerCase(),nivel:u.pds_nivel||'visualizador',lojas:JSON.parse(u.pds_lojas||'[]'),etapas:JSON.parse(u.pds_etapas||'[]')}));
+  const list=document.getElementById('adminUserList');
+  list.innerHTML=todosUsuarios.length?todosUsuarios.map(u=>{
+    const lojasU=(u.lojas||[]).map(id=>nomeLoja(id)).join(', ')||'—';
+    const etapasU=(u.etapas||[]).join(', ')||'—';
+    return\`<div class="admin-item">
       <div class="item-info">
-        <div class="item-name">👤 ${u.email}</div>
-        <div class="item-sub"><span class="chip">${u.nivel}</span> Lojas: ${lojasU}</div>
+        <div class="item-name">👤 \${u.Email||u.email||'—'}</div>
+        <div class="item-sub"><span class="chip">\${u.nivel||'—'}</span> Lojas: \${lojasU}</div>
+        \${u.nivel==='operador'?\`<div class="item-sub">Etapas: \${etapasU}</div>\`:''}
       </div>
       <div class="item-actions">
-        <button class="sm" onclick="editarUsuario('${u.id}')">✏ Editar</button>
-        <button class="sm danger" onclick="deletarUsuario('${u.id}')">✕</button>
+        <button class="sm" onclick="editarUsuario('\${u.id}')">✏ Editar</button>
+        <button class="sm danger" onclick="deletarUsuario('\${u.id}')">✕</button>
       </div>
-    </div>`;
-  }).join('') : '<div style="font-size:12px;color:#aaa;text-align:center;padding:12px">Nenhum usuário.</div>';
+    </div>\`;
+  }).join(''):'<div style="font-size:12px;color:#aaa;text-align:center;padding:12px">Nenhum usuário.</div>';
 }
-function buildAdminUserLojas() {
-  document.getElementById('adminUserLojas').innerHTML = lojas.filter(l=>l.ativa!==false).map(l=>`
-    <label class="checkbox-item"><input type="checkbox" class="admin-loja-chk" value="${l.id}"/> ${l.nome}</label>`).join('');
+function buildAdminUserLojas(){
+  const wrap=document.getElementById('adminUserLojas');
+  wrap.innerHTML=lojas.filter(l=>l.ativa!==false).map(l=>\`
+    <label class="checkbox-item">
+      <input type="checkbox" class="admin-loja-chk" value="\${l.id}"/>
+      \${l.nome}
+    </label>\`).join('');
 }
-function buildAdminUserEtapas() {
-  document.getElementById('adminUserEtapas').innerHTML = STAGES.filter(s=>s!=='Entregue').map(s=>`
-    <label class="checkbox-item"><input type="checkbox" class="admin-etapa-chk" value="${s}"/> ${s}</label>`).join('');
+function buildAdminUserEtapas(){
+  const wrap=document.getElementById('adminUserEtapas');
+  wrap.innerHTML=STAGES.filter(s=>s!=='Entregue').map(s=>\`
+    <label class="checkbox-item">
+      <input type="checkbox" class="admin-etapa-chk" value="\${s}"/>
+      \${s}
+    </label>\`).join('');
 }
-window.onNivelChange = () => {
-  document.getElementById('adminUserEtapasWrap').style.display = document.getElementById('adminUserNivel').value === 'operador' ? '' : 'none';
+window.onNivelChange=()=>{
+  const nivel=document.getElementById('adminUserNivel').value;
+  document.getElementById('adminUserEtapasWrap').style.display=nivel==='operador'?'':'none';
 };
-window.salvarLoja = async () => {
-  const nome = document.getElementById('adminLojaNome').value.trim();
-  if (!nome) { showToast('⚠ Informe o nome da loja.'); return; }
-  await dvPost(TABLES.lojas, {pds_nome: nome, pds_ativa: true});
-  document.getElementById('adminLojaNome').value = '';
+window.salvarLoja=async()=>{
+  const nome=document.getElementById('adminLojaNome').value.trim();
+  if(!nome){showToast('⚠ Informe o nome da loja.');return;}
+  const ref=await dvPost(TABLES.lojas,{pds_nome:nome,pds_ativa:true}); const newId=ref;
+  document.getElementById('adminLojaNome').value='';
   await renderAdminLojas();
-  buildLojaSelector(); buildAdminUserLojas();
-  showToast(`🏪 Loja "${nome}" criada!`);
+  buildLojaSelector();
+  buildAdminUserLojas();
+  showToast(\`🏪 Loja "\${nome}" criada!\`);
 };
-window.toggleLoja = async (id, ativa) => {
-  await dvPatch(TABLES.lojas, id, {pds_ativa: !ativa});
+window.toggleLoja=async(id,ativa)=>{
+  await dvPatch(TABLES.lojas,id,{pds_ativa:!ativa});
   await renderAdminLojas();
-  showToast(ativa ? 'Loja desativada.' : 'Loja ativada.');
+  showToast(ativa?'Loja desativada.':'Loja ativada.');
 };
-window.salvarUsuario = async () => {
-  const email = document.getElementById('adminUserEmail').value.trim();
-  const nivel = document.getElementById('adminUserNivel').value;
-  if (!email) { showToast('⚠ Informe o e-mail.'); return; }
-  const lojasChk  = [...document.querySelectorAll('.admin-loja-chk:checked')].map(c => c.value);
-  const etapasChk = nivel==='operador' ? [...document.querySelectorAll('.admin-etapa-chk:checked')].map(c => c.value) : [];
-  const existe = todosUsuarios.find(u => u.email === email.toLowerCase());
-  const body = {pds_email: email.toLowerCase(), pds_nivel: nivel, pds_lojas: JSON.stringify(lojasChk), pds_etapas: JSON.stringify(etapasChk)};
-  if (existe) await dvPatch(TABLES.usuarios, existe.id, body);
-  else await dvPost(TABLES.usuarios, body);
-  document.getElementById('adminUserEmail').value = '';
-  document.getElementById('adminUserNivel').value = 'visualizador';
-  document.querySelectorAll('.admin-loja-chk,.admin-etapa-chk').forEach(c => c.checked = false);
-  document.getElementById('adminUserEtapasWrap').style.display = 'none';
+window.salvarUsuario=async()=>{
+  const email=document.getElementById('adminUserEmail').value.trim();
+  const nivel=document.getElementById('adminUserNivel').value;
+  if(!email){showToast('⚠ Informe o e-mail.');return;}
+  const lojasChk=[...document.querySelectorAll('.admin-loja-chk:checked')].map(c=>c.value);
+  const etapasChk=nivel==='operador'?[...document.querySelectorAll('.admin-etapa-chk:checked')].map(c=>c.value):[];
+  // Verifica se já existe
+  const existe=todosUsuarios.find(u=>(u.Email||u.email||'').toLowerCase()===email.toLowerCase());
+  const docId=existe?existe.id:email.replace(/[^a-zA-Z0-9]/g,'_');
+  if(existe){await dvPatch(TABLES.usuarios,existe.id,{pds_email:email.toLowerCase(),pds_nivel:nivel,pds_lojas:JSON.stringify(lojasChk),pds_etapas:JSON.stringify(etapasChk)});}else{await dvPost(TABLES.usuarios,{pds_email:email.toLowerCase(),pds_nivel:nivel,pds_lojas:JSON.stringify(lojasChk),pds_etapas:JSON.stringify(etapasChk)});}
+  document.getElementById('adminUserEmail').value='';
+  document.getElementById('adminUserNivel').value='visualizador';
+  document.querySelectorAll('.admin-loja-chk,.admin-etapa-chk').forEach(c=>c.checked=false);
+  document.getElementById('adminUserEtapasWrap').style.display='none';
   await renderAdminUsuarios();
-  showToast(`✔ Usuário ${email} salvo!`);
+  showToast(\`✔ Usuário \${email} salvo!\`);
 };
-window.editarUsuario = id => {
-  const u = todosUsuarios.find(x => x.id === id); if (!u) return;
-  document.getElementById('adminUserEmail').value  = u.email;
-  document.getElementById('adminUserNivel').value  = u.nivel;
-  document.getElementById('adminUserEtapasWrap').style.display = u.nivel === 'operador' ? '' : 'none';
-  document.querySelectorAll('.admin-loja-chk').forEach(c  => c.checked = (u.lojas  || []).includes(c.value));
-  document.querySelectorAll('.admin-etapa-chk').forEach(c => c.checked = (u.etapas || []).includes(c.value));
+window.editarUsuario=id=>{
+  const u=todosUsuarios.find(x=>x.id===id);if(!u)return;
+  document.getElementById('adminUserEmail').value=u.Email||u.email||'';
+  document.getElementById('adminUserNivel').value=u.nivel||'visualizador';
+  document.getElementById('adminUserEtapasWrap').style.display=u.nivel==='operador'?'':'none';
+  document.querySelectorAll('.admin-loja-chk').forEach(c=>c.checked=(u.lojas||[]).includes(c.value));
+  document.querySelectorAll('.admin-etapa-chk').forEach(c=>c.checked=(u.etapas||[]).includes(c.value));
   document.getElementById('adminUserEmail').scrollIntoView({behavior:'smooth'});
 };
-window.deletarUsuario = async id => {
-  if (!confirm('Remover este usuário?')) return;
-  await dvDelete(TABLES.usuarios, id);
+window.deletarUsuario=async id=>{
+  if(!confirm('Remover este usuário?'))return;
+  const u=todosUsuarios.find(x=>x.id===id); if(u&&u._id) await dvDelete(TABLES.usuarios,u._id); else await dvDelete(TABLES.usuarios,id);
   await renderAdminUsuarios();
   showToast('Usuário removido.');
 };
 
-// ============================================================
-// TABS
-// ============================================================
-window.showTab = t => {
-  ['k','t','c','r','a'].forEach(x => {
-    document.getElementById('view' + x.toUpperCase()).style.display = t === x ? '' : 'none';
-    document.getElementById('tab' + x.toUpperCase()).className = 'tab' + (t === x ? ' active' : '');
+// ── TABS ──────────────────────────────────────────────────────
+window.showTab=t=>{
+  ['k','t','c','r','a'].forEach(x=>{
+    document.getElementById('view'+x.toUpperCase()).style.display=t===x?'':'none';
+    document.getElementById('tab'+x.toUpperCase()).className='tab'+(t===x?' active':'');
   });
-  if (t === 't') renderTable();
-  if (t === 'c') renderCalendar();
-  if (t === 'r') renderRelatorio();
-  if (t === 'a') renderAdmin();
+  if(t==='t')renderTable();
+  if(t==='c')renderCalendar();
+  if(t==='r')renderRelatorio();
+  if(t==='a')renderAdmin();
 };
+
+// ── ENTER ─────────────────────────────────────────────────────
+['loginEmail','loginPass'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();}));
+['cadastroEmail','cadastroSenha','cadastroConfirma'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')doCadastro();}));
+document.getElementById('recoverEmail').addEventListener('keydown',e=>{if(e.key==='Enter')doRecover();});
 </script>
 </body>
 </html>
