@@ -804,7 +804,7 @@ function entregaBadge(de){
   let cls='ok',label='📅 '+fmtDate(de);
   if(diff<0){cls='late';label='⚠ Atrasado '+fmtDate(de);}
   else if(diff<=3){cls='soon';label='⏰ '+fmtDate(de);}
-  return \`<div class="card-entrega \${cls}">\${label}</div>\`;
+  return `<div class="card-entrega ${cls}">${label}</div>`;
 }
 function buildCard(v){
   const isEntregue=v.status==='Entregue';
@@ -816,20 +816,20 @@ function buildCard(v){
   card.draggable=isDraggable;
   const hasHistory=(v.history||[]).filter(h=>h.leftAt).length>0;
   const podeOperar=userProfile&&userProfile.nivel!=='visualizador';
-  const btnParar=podeOperar&&!isEntregue?(isParado?\`<button class="btn-retomar" onclick="openRetomarModal('\${v.chassi}')">▶ Retomar</button>\`:\`<button class="btn-parar" onclick="openPararModal('\${v.chassi}')">⏸ Parar</button>\`):'';
-  card.innerHTML=\`
-    <div class="card-chassi">\${v.chassi}</div>
-    <div class="card-sub">\${[v.modelo,v.cor].filter(Boolean).join(' · ')||'—'}</div>
-    <div class="card-sub">\${v.cliente||''}</div>
-    <div class="card-sub" style="color:#888;font-size:10px">🏪 \${nomeLoja(v.lojaId)}</div>
-    \${v.observacoes?\`<div class="card-sub" style="font-style:italic;color:#888;font-size:10px;margin-top:2px">📝 \${v.observacoes}</div>\`:''}
-    \${entregaBadge(v.dataEntrega)}
-    \${isParado?\`<div class="card-parado-label">🛑 Parado</div><div class="card-parado-motivo">\${v.paradoMotivo||''}</div>\`:''}
-    \${isConcluida&&!isParado?\`<div class="card-concluida-label">✅ Etapa concluída</div>\`:''}
-    \${hasHistory?\`<button class="btn-historico" onclick="openHistoricoModal('\${v.chassi}')">📋 Ver histórico</button>\`:''}
-    \${isEntregue?\`<div style="margin-top:8px;font-size:11px;color:#28a745;font-weight:600">👆 Clique para finalizar</div>\`:''}
-    \${podeOperar&&!isEntregue?\`<div class="etapa-check-row"><input type="checkbox" id="chk-\${v.chassi}" \${isConcluida?'checked':''} onchange="onEtapaConcluidaChange('\${v.chassi}',this)"/><label for="chk-\${v.chassi}">Etapa concluída</label></div>\`:''}
-    \${btnParar}\`;
+  const btnParar=podeOperar&&!isEntregue?(isParado?`<button class="btn-retomar" onclick="openRetomarModal('${v.chassi}')">▶ Retomar</button>`:`<button class="btn-parar" onclick="openPararModal('${v.chassi}')">⏸ Parar</button>`):'';
+  card.innerHTML=`
+    <div class="card-chassi">${v.chassi}</div>
+    <div class="card-sub">${[v.modelo,v.cor].filter(Boolean).join(' · ')||'—'}</div>
+    <div class="card-sub">${v.cliente||''}</div>
+    <div class="card-sub" style="color:#888;font-size:10px">🏪 ${nomeLoja(v.lojaId)}</div>
+    ${v.observacoes?`<div class="card-sub" style="font-style:italic;color:#888;font-size:10px;margin-top:2px">📝 ${v.observacoes}</div>`:''}
+    ${entregaBadge(v.dataEntrega)}
+    ${isParado?`<div class="card-parado-label">🛑 Parado</div><div class="card-parado-motivo">${v.paradoMotivo||''}</div>`:''}
+    ${isConcluida&&!isParado?`<div class="card-concluida-label">✅ Etapa concluída</div>`:''}
+    ${hasHistory?`<button class="btn-historico" onclick="openHistoricoModal('${v.chassi}')">📋 Ver histórico</button>`:''}
+    ${isEntregue?`<div style="margin-top:8px;font-size:11px;color:#28a745;font-weight:600">👆 Clique para finalizar</div>`:''}
+    ${podeOperar&&!isEntregue?`<div class="etapa-check-row"><input type="checkbox" id="chk-${v.chassi}" ${isConcluida?'checked':''} onchange="onEtapaConcluidaChange('${v.chassi}',this)"/><label for="chk-${v.chassi}">Etapa concluída</label></div>`:''}
+    ${btnParar}`;
   if(isEntregue){
     card.addEventListener('click',e=>{
       if(e.target.tagName==='BUTTON'||e.target.tagName==='INPUT'||e.target.tagName==='LABEL')return;
@@ -857,7 +857,7 @@ function renderKanban(){
     const col=document.createElement('div');
     col.className='col-wrap'+(isEntregue?' entregue-col':'');
     const lock=!allowed&&!isEntregue&&userProfile&&userProfile.nivel!=='admin'&&userProfile.nivel!=='gestor'?'<span class="col-lock">🔒</span>':'';
-    col.innerHTML=\`<div class="col-header">\${stage} <span class="col-count">(\${items.length})</span>\${lock}</div>\`;
+    col.innerHTML=`<div class="col-header">${stage} <span class="col-count">(${items.length})</span>${lock}</div>`;
     const body=document.createElement('div');
     body.className='col-body'+((!allowed&&!isEntregue)?' blocked':'');
     if(!items.length)body.innerHTML='<div class="empty-col">vazio</div>';
@@ -883,7 +883,7 @@ window.openModal=(chassi,toStage)=>{
   const si=STAGES.indexOf(toStage);
   const v=vehicles.find(x=>x.chassi===chassi);
   pendingMove={chassi,toStage};
-  document.getElementById('modalTitle').textContent=\`Confirmar início em "\${toStage}"\`;
+  document.getElementById('modalTitle').textContent=`Confirmar início em "${toStage}"`;
   document.getElementById('modalChassi').textContent=chassi+(v&&v.modelo?' — '+v.modelo:'')+(v&&v.cliente?' / '+v.cliente:'');
   const badge=document.getElementById('modalStageBadge');
   badge.textContent=toStage;badge.style.background=BADGE_BG[si]||'#eee';badge.style.color=BADGE_FG[si]||'#333';
@@ -903,7 +903,7 @@ window.confirmMove=async()=>{
   history.push({stage:toStage,enteredAt:now,leftAt:''});
   closeModal();
   await saveVehicle({...v,status:toStage,statusSince:now,etapaConcluida:false,history});
-  showToast(\`✔ \${chassi} → \${toStage}\`);
+  showToast(`✔ ${chassi} → ${toStage}`);
 };
 document.getElementById('modalOverlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
 
@@ -931,7 +931,7 @@ window.confirmFinal=async()=>{
   await saveHistorico(histRows);
   await deleteVehicle(pendingFinal);
   closeFinalModal();
-  showToast(\`🏁 \${v.chassi} finalizado!\`);
+  showToast(`🏁 ${v.chassi} finalizado!`);
 };
 document.getElementById('modalFinalOverlay').addEventListener('click',function(e){if(e.target===this)closeFinalModal();});
 
@@ -954,7 +954,7 @@ window.confirmParar=async()=>{
   const history=[...(v.history||[]),{stage:'⏸ PARADO',enteredAt:now,leftAt:'',motivo}];
   await saveVehicle({...v,parado:true,paradoMotivo:motivo,history});
   closePararModal();
-  showToast(\`🛑 \${v.chassi} pausado.\`);
+  showToast(`🛑 ${v.chassi} pausado.`);
 };
 document.getElementById('modalPararOverlay').addEventListener('click',function(e){if(e.target===this)closePararModal();});
 
@@ -976,7 +976,7 @@ window.confirmRetomar=async()=>{
   history.push({stage:'▶ RETOMADO',enteredAt:now,leftAt:now});
   await saveVehicle({...v,parado:false,paradoMotivo:'',history});
   closeRetomarModal();
-  showToast(\`▶ \${v.chassi} retomado!\`);
+  showToast(`▶ ${v.chassi} retomado!`);
 };
 document.getElementById('modalRetomarOverlay').addEventListener('click',function(e){if(e.target===this)closeRetomarModal();});
 
@@ -1000,31 +1000,31 @@ window.confirmReprogramar=async()=>{
   const motivo=document.getElementById('reprogramarMotivo').value.trim();
   const now=new Date().toISOString();
   const history=[...(v.history||[]),{stage:'📅 REPROGRAMADO',enteredAt:now,leftAt:now,
-    motivo:\`De \${fmtDate(v.dataEntrega||'(sem data)')} para \${fmtDate(novaData)}\${motivo?' — '+motivo:''}\`}];
+    motivo:`De ${fmtDate(v.dataEntrega||'(sem data)')} para ${fmtDate(novaData)}${motivo?' — '+motivo:''}`}];
   await saveVehicle({...v,dataEntrega:novaData,history});
   closeReprogramarModal();
-  showToast(\`📅 \${v.chassi} → \${fmtDate(novaData)}\`);
+  showToast(`📅 ${v.chassi} → ${fmtDate(novaData)}`);
 };
 document.getElementById('modalReprogramarOverlay').addEventListener('click',function(e){if(e.target===this)closeReprogramarModal();});
 
 // ── HISTÓRICO MODAL ───────────────────────────────────────────
 window.openHistoricoModal=chassi=>{
   const v=vehicles.find(x=>x.chassi===chassi);if(!v)return;
-  document.getElementById('histModalTitle').textContent=\`Histórico — \${chassi}\`;
+  document.getElementById('histModalTitle').textContent=`Histórico — ${chassi}`;
   const hist=v.history||[];
   const tbody=document.getElementById('histModalBody');
   if(!hist.length){tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:#aaa;padding:16px">Sem registros.</td></tr>';}
   else tbody.innerHTML=hist.map(h=>{
     const si=STAGES.indexOf(h.stage);
-    return\`<tr>
+    return`<tr>
       <td>
-        <span class="badge \${si>=0?STAGE_CLS[si]:'b0'}">\${h.stage}</span>
-        \${h.motivo?\`<div style="font-size:10px;color:#888;margin-top:3px">\${h.motivo}</div>\`:''}
+        <span class="badge ${si>=0?STAGE_CLS[si]:'b0'}">${h.stage}</span>
+        ${h.motivo?`<div style="font-size:10px;color:#888;margin-top:3px">${h.motivo}</div>`:''}
       </td>
-      <td>\${fmtDateTime(h.enteredAt)}</td>
-      <td>\${h.leftAt?fmtDateTime(h.leftAt):'<span style="color:#888;font-style:italic">Em andamento</span>'}</td>
-      <td>\${durationStr(h.enteredAt,h.leftAt||null)}</td>
-    </tr>\`;
+      <td>${fmtDateTime(h.enteredAt)}</td>
+      <td>${h.leftAt?fmtDateTime(h.leftAt):'<span style="color:#888;font-style:italic">Em andamento</span>'}</td>
+      <td>${durationStr(h.enteredAt,h.leftAt||null)}</td>
+    </tr>`;
   }).join('');
   document.getElementById('modalHistoricoOverlay').classList.add('open');
 };
@@ -1044,7 +1044,7 @@ window.onEtapaConcluidaChange=async(chassi,el)=>{
     const now=new Date().toISOString();
     const history=[...(v.history||[]),{stage:'🔄 CONCLUÍDA DESMARCADA',enteredAt:now,leftAt:now,motivo:'Etapa '+v.status+' desmarcada como concluída'}];
     await saveVehicle({...v,etapaConcluida:false,history});
-    showToast(\`🔄 \${chassi} — concluída desmarcada.\`);
+    showToast(`🔄 ${chassi} — concluída desmarcada.`);
   }
 };
 window.cancelarConcluida=()=>{
@@ -1059,7 +1059,7 @@ window.confirmConcluida=async()=>{
   const history=[...(v.history||[]),{stage:v.status+' — Etapa concluída',enteredAt:now,leftAt:now}];
   await saveVehicle({...v,etapaConcluida:true,history});
   cancelarConcluida();
-  showToast(\`✅ \${v.chassi} — etapa concluída!\`);
+  showToast(`✅ ${v.chassi} — etapa concluída!`);
 };
 document.getElementById('modalConcluidaOverlay').addEventListener('click',function(e){if(e.target===this)cancelarConcluida();});
 
@@ -1120,14 +1120,14 @@ function renderTable(){
   const now=today();const si=s=>Math.max(0,STAGES.indexOf(s||'Proposta'));
   tbody.innerHTML=filtered.map(v=>{
     const d=parseDate(v.dataEntrega);const late=d&&d<now;
-    return\`<tr class="\${late?'late-row':''}">
-      <td><strong>\${v.chassi}</strong></td>
-      <td>\${v.modelo||'-'}</td><td>\${v.cor||'-'}</td><td>\${v.cliente||'-'}</td><td>\${v.vendedor||'-'}</td>
-      <td>\${fmtDate(v.dataInicio)}</td>
-      <td><span class="badge b\${si(v.status)}">\${v.status||'Proposta'}</span></td>
-      <td>\${elapsedStr(v.statusSince)}</td>
-      <td>\${late?'<span style="color:#c62828;font-weight:600">⚠ '+fmtDate(v.dataEntrega)+'</span>':fmtDate(v.dataEntrega)}</td>
-    </tr>\`;
+    return`<tr class="${late?'late-row':''}">
+      <td><strong>${v.chassi}</strong></td>
+      <td>${v.modelo||'-'}</td><td>${v.cor||'-'}</td><td>${v.cliente||'-'}</td><td>${v.vendedor||'-'}</td>
+      <td>${fmtDate(v.dataInicio)}</td>
+      <td><span class="badge b${si(v.status)}">${v.status||'Proposta'}</span></td>
+      <td>${elapsedStr(v.statusSince)}</td>
+      <td>${late?'<span style="color:#c62828;font-weight:600">⚠ '+fmtDate(v.dataEntrega)+'</span>':fmtDate(v.dataEntrega)}</td>
+    </tr>`;
   }).join('');
 }
 
@@ -1152,18 +1152,18 @@ function renderCalendar(){
   Object.keys(buckets).forEach(k=>buckets[k].sort((a,b)=>{const da=parseDate(a.dataEntrega),db=parseDate(b.dataEntrega);if(!da&&!db)return 0;if(!da)return 1;if(!db)return-1;return da-db;}));
   cols.forEach(c=>{
     const col=document.createElement('div');col.className='cal-col'+(c.cls?' '+c.cls:'');
-    col.innerHTML=\`<div class="cal-col-header">\${c.label}\${c.day?'<br><span style="font-size:11px;font-weight:400;opacity:.8">'+c.day+'</span>':''}</div>\`;
+    col.innerHTML=`<div class="cal-col-header">${c.label}${c.day?'<br><span style="font-size:11px;font-weight:400;opacity:.8">'+c.day+'</span>':''}</div>`;
     const items=buckets[c.key]||[];
     if(!items.length)col.innerHTML+='<div class="cal-empty">—</div>';
     else items.forEach(v=>{
       const card=document.createElement('div');card.className='cal-card';
       const podeReprog=userProfile&&userProfile.nivel!=='visualizador';
-      card.innerHTML=\`<div class="chassi">\${v.chassi}</div>
-        <div class="sub">\${v.modelo||''} \${v.cor?'· '+v.cor:''}</div>
-        <div class="sub">\${v.cliente||''}</div>
-        <div class="sub" style="color:#888;font-size:10px">🏪 \${nomeLoja(v.lojaId)}</div>
-        <div class="sub" style="margin-top:3px"><span class="badge b\${Math.max(0,STAGES.indexOf(v.status||'Proposta'))}">\${v.status||'Proposta'}</span></div>
-        \${podeReprog?\`<button class="btn-reprogramar" onclick="openReprogramarModal('\${v.chassi}')">📅 Reprogramar</button>\`:''}\`;
+      card.innerHTML=`<div class="chassi">${v.chassi}</div>
+        <div class="sub">${v.modelo||''} ${v.cor?'· '+v.cor:''}</div>
+        <div class="sub">${v.cliente||''}</div>
+        <div class="sub" style="color:#888;font-size:10px">🏪 ${nomeLoja(v.lojaId)}</div>
+        <div class="sub" style="margin-top:3px"><span class="badge b${Math.max(0,STAGES.indexOf(v.status||'Proposta'))}">${v.status||'Proposta'}</span></div>
+        ${podeReprog?`<button class="btn-reprogramar" onclick="openReprogramarModal('${v.chassi}')">📅 Reprogramar</button>`:''}`;
       col.appendChild(card);
     });
     board.appendChild(col);
@@ -1206,18 +1206,18 @@ window.renderRelatorio=async()=>{
     });
   }
   rows.sort((a,b)=>a.chassi.localeCompare(b.chassi)||a.inicio.localeCompare(b.inicio));
-  document.getElementById('relSummary').textContent=\`\${rows.length} registro(s)\`;
+  document.getElementById('relSummary').textContent=`${rows.length} registro(s)`;
   const tbody=document.getElementById('relBody');
   if(!rows.length){tbody.innerHTML='<tr><td colspan="9" class="empty-table">Nenhum registro.</td></tr>';return;}
-  tbody.innerHTML=rows.map(r=>\`<tr>
-    <td><strong>\${r.chassi}</strong></td><td>\${r.modelo||'-'}</td><td>\${r.cliente||'-'}</td>
-    <td><span class="chip">\${r.lojaNome||'-'}</span></td>
-    <td><span class="badge b\${Math.max(0,STAGES.indexOf(r.etapa))}">\${r.etapa||'-'}</span></td>
-    <td>\${fmtDateTime(r.inicio)}</td>
-    <td>\${r.fim?fmtDateTime(r.fim):'<span style="color:#888;font-style:italic">Em andamento</span>'}</td>
-    <td><span class="duration-pill\${r.duracaoMin>2880?' long':''}">\${r.duracao||'-'}</span></td>
-    <td>\${r.situacao==='Finalizado'?'<span class="status-finalizado">✔ Finalizado</span>':'<span class="status-em-processo">⏳ Em processo</span>'}</td>
-  </tr>\`).join('');
+  tbody.innerHTML=rows.map(r=>`<tr>
+    <td><strong>${r.chassi}</strong></td><td>${r.modelo||'-'}</td><td>${r.cliente||'-'}</td>
+    <td><span class="chip">${r.lojaNome||'-'}</span></td>
+    <td><span class="badge b${Math.max(0,STAGES.indexOf(r.etapa))}">${r.etapa||'-'}</span></td>
+    <td>${fmtDateTime(r.inicio)}</td>
+    <td>${r.fim?fmtDateTime(r.fim):'<span style="color:#888;font-style:italic">Em andamento</span>'}</td>
+    <td><span class="duration-pill${r.duracaoMin>2880?' long':''}">${r.duracao||'-'}</span></td>
+    <td>${r.situacao==='Finalizado'?'<span class="status-finalizado">✔ Finalizado</span>':'<span class="status-em-processo">⏳ Em processo</span>'}</td>
+  </tr>`).join('');
   window._relRows=rows;
 };
 window.limparFiltrosRel=()=>{
@@ -1249,16 +1249,16 @@ async function renderAdminLojas(){
   const raw=await dvGet(TABLES.lojas);
   lojas=raw.map(l=>({id:l.pds_lojaid,nome:l.pds_nome,ativa:l.pds_ativa!==false}));
   const list=document.getElementById('adminLojaList');
-  list.innerHTML=lojas.length?lojas.map(l=>\`
+  list.innerHTML=lojas.length?lojas.map(l=>`
     <div class="admin-item">
       <div class="item-info">
-        <div class="item-name">🏪 \${l.nome}</div>
-        <div class="item-sub">ID: \${l.id} · \${l.ativa!==false?'<span style="color:#2e7d32">Ativa</span>':'<span style="color:#c62828">Inativa</span>'}</div>
+        <div class="item-name">🏪 ${l.nome}</div>
+        <div class="item-sub">ID: ${l.id} · ${l.ativa!==false?'<span style="color:#2e7d32">Ativa</span>':'<span style="color:#c62828">Inativa</span>'}</div>
       </div>
       <div class="item-actions">
-        <button class="sm danger" onclick="toggleLoja('\${l.id}',\${l.ativa!==false})">\${l.ativa!==false?'Desativar':'Ativar'}</button>
+        <button class="sm danger" onclick="toggleLoja('${l.id}',${l.ativa!==false})">${l.ativa!==false?'Desativar':'Ativar'}</button>
       </div>
-    </div>\`).join(''):'<div style="font-size:12px;color:#aaa;text-align:center;padding:12px">Nenhuma loja cadastrada.</div>';
+    </div>`).join(''):'<div style="font-size:12px;color:#aaa;text-align:center;padding:12px">Nenhuma loja cadastrada.</div>';
 }
 async function renderAdminUsuarios(){
   const raw=await dvGet(TABLES.usuarios);
@@ -1267,34 +1267,34 @@ async function renderAdminUsuarios(){
   list.innerHTML=todosUsuarios.length?todosUsuarios.map(u=>{
     const lojasU=(u.lojas||[]).map(id=>nomeLoja(id)).join(', ')||'—';
     const etapasU=(u.etapas||[]).join(', ')||'—';
-    return\`<div class="admin-item">
+    return`<div class="admin-item">
       <div class="item-info">
-        <div class="item-name">👤 \${u.Email||u.email||'—'}</div>
-        <div class="item-sub"><span class="chip">\${u.nivel||'—'}</span> Lojas: \${lojasU}</div>
-        \${u.nivel==='operador'?\`<div class="item-sub">Etapas: \${etapasU}</div>\`:''}
+        <div class="item-name">👤 ${u.Email||u.email||'—'}</div>
+        <div class="item-sub"><span class="chip">${u.nivel||'—'}</span> Lojas: ${lojasU}</div>
+        ${u.nivel==='operador'?`<div class="item-sub">Etapas: ${etapasU}</div>`:''}
       </div>
       <div class="item-actions">
-        <button class="sm" onclick="editarUsuario('\${u.id}')">✏ Editar</button>
-        <button class="sm danger" onclick="deletarUsuario('\${u.id}')">✕</button>
+        <button class="sm" onclick="editarUsuario('${u.id}')">✏ Editar</button>
+        <button class="sm danger" onclick="deletarUsuario('${u.id}')">✕</button>
       </div>
-    </div>\`;
+    </div>`;
   }).join(''):'<div style="font-size:12px;color:#aaa;text-align:center;padding:12px">Nenhum usuário.</div>';
 }
 function buildAdminUserLojas(){
   const wrap=document.getElementById('adminUserLojas');
-  wrap.innerHTML=lojas.filter(l=>l.ativa!==false).map(l=>\`
+  wrap.innerHTML=lojas.filter(l=>l.ativa!==false).map(l=>`
     <label class="checkbox-item">
-      <input type="checkbox" class="admin-loja-chk" value="\${l.id}"/>
-      \${l.nome}
-    </label>\`).join('');
+      <input type="checkbox" class="admin-loja-chk" value="${l.id}"/>
+      ${l.nome}
+    </label>`).join('');
 }
 function buildAdminUserEtapas(){
   const wrap=document.getElementById('adminUserEtapas');
-  wrap.innerHTML=STAGES.filter(s=>s!=='Entregue').map(s=>\`
+  wrap.innerHTML=STAGES.filter(s=>s!=='Entregue').map(s=>`
     <label class="checkbox-item">
-      <input type="checkbox" class="admin-etapa-chk" value="\${s}"/>
-      \${s}
-    </label>\`).join('');
+      <input type="checkbox" class="admin-etapa-chk" value="${s}"/>
+      ${s}
+    </label>`).join('');
 }
 window.onNivelChange=()=>{
   const nivel=document.getElementById('adminUserNivel').value;
@@ -1308,7 +1308,7 @@ window.salvarLoja=async()=>{
   await renderAdminLojas();
   buildLojaSelector();
   buildAdminUserLojas();
-  showToast(\`🏪 Loja "\${nome}" criada!\`);
+  showToast(`🏪 Loja "${nome}" criada!`);
 };
 window.toggleLoja=async(id,ativa)=>{
   await dvPatch(TABLES.lojas,id,{pds_ativa:!ativa});
@@ -1330,7 +1330,7 @@ window.salvarUsuario=async()=>{
   document.querySelectorAll('.admin-loja-chk,.admin-etapa-chk').forEach(c=>c.checked=false);
   document.getElementById('adminUserEtapasWrap').style.display='none';
   await renderAdminUsuarios();
-  showToast(\`✔ Usuário \${email} salvo!\`);
+  showToast(`✔ Usuário ${email} salvo!`);
 };
 window.editarUsuario=id=>{
   const u=todosUsuarios.find(x=>x.id===id);if(!u)return;
