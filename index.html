@@ -492,7 +492,7 @@ const MSAL_CONFIG = {
   },
   cache: { cacheLocation: "sessionStorage", storeAuthStateInCookie: false }
 };
-const DATAVERSE_URL   = "orgaa2b7be4.crm2.dynamics.com"; // ⚠ preencha com sua URL do Dataverse
+const DATAVERSE_URL   = "https://orgaa2b7be4.crm2.dynamics.com"; // ⚠ preencha com sua URL do Dataverse
 const DATAVERSE_SCOPE = [DATAVERSE_URL + "/.default"];
 const TABLES = {
   veiculos:  "pds_veiculoes",
@@ -1360,10 +1360,7 @@ window.showTab=t=>{
   if(t==='a')renderAdmin();
 };
 
-// ── ENTER ─────────────────────────────────────────────────────
-['loginEmail','loginPass'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();}));
-['cadastroEmail','cadastroSenha','cadastroConfirma'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{if(e.key==='Enter')doCadastro();}));
-document.getElementById('recoverEmail').addEventListener('keydown',e=>{if(e.key==='Enter')doRecover();});
+// ── Login via botão Microsoft (sem campos de texto) ──
 </script>
 </body>
 </html>
