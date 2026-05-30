@@ -217,7 +217,7 @@ tr:hover td{background:#f9f9fb}
     <div class="login-logo">🚗</div>
     <div class="login-title">Painel PDS</div>
     <div class="login-sub">Preparação de Veículos</div>
-    <button class="login-btn" id="loginBtn" onclick="doLogin()" style="display:flex;align-items:center;justify-content:center;gap:10px;background:#0078d4">
+    <button class="login-btn" id="loginBtn" onclick="doLogin()" disabled style="display:flex;align-items:center;justify-content:center;gap:10px;background:#0078d4">
       <svg width="20" height="20" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect x="1" y="1" width="10" height="10" fill="#F25022"/>
         <rect x="12" y="1" width="10" height="10" fill="#7FBA00"/>
@@ -503,14 +503,35 @@ const TABLES = {
 
 // ── Instância MSAL (inicializada antes de qualquer uso) ──────
 let msalInstance = null;
+let msalInitPromise = null;
 let accessToken  = null;
 
 async function initMsal() {
-  msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
-  // MSAL v3 usa initialize(); em algumas versões 2.x esse método não existe.
-  if (typeof msalInstance.initialize === 'function') {
-    await msalInstance.initialize();
+  if (msalInstance) return msalInstance;
+
+  if (typeof msal === 'undefined' || !msal.PublicClientApplication) {
+    throw new Error('Biblioteca MSAL não foi carregada. Verifique a conexão com https://alcdn.msauth.net ou bloqueios de rede/CSP.');
   }
+
+  if (!msalInitPromise) {
+    msalInitPromise = (async () => {
+      const app = new msal.PublicClientApplication(MSAL_CONFIG);
+
+      // MSAL v3 usa initialize(); em algumas versões 2.x esse método não existe.
+      if (typeof app.initialize === 'function') {
+        await app.initialize();
+      }
+
+      msalInstance = app;
+      return app;
+    })().catch(e => {
+      msalInstance = null;
+      msalInitPromise = null;
+      throw e;
+    });
+  }
+
+  return await msalInitPromise;
 }
 
 // ── API Dataverse ────────────────────────────────────────────
@@ -656,20 +677,31 @@ function setMsg(txt,type=''){const el=document.getElementById('syncMsg');el.text
 window.doLogin = async () => {
   const btn = document.getElementById('loginBtn');
   const err = document.getElementById('loginErr');
+  const originalHtml = btn.innerHTML;
+
   btn.innerHTML = '⟳ Redirecionando...';
   btn.disabled  = true;
   err.textContent = '';
+
   try {
+    await initMsal();
+
+    if (!msalInstance || typeof msalInstance.loginRedirect !== 'function') {
+      throw new Error('MSAL não inicializou corretamente. Recarregue a página e tente novamente.');
+    }
+
     await msalInstance.loginRedirect({ scopes: DATAVERSE_SCOPE, prompt: 'select_account' });
   } catch(e) {
-    err.textContent = 'Erro: ' + e.message;
-    btn.innerHTML = '&#x229E; Entrar com Microsoft';
+    console.error('Erro no login Microsoft:', e);
+    err.textContent = 'Erro: ' + (e.message || e);
+    btn.innerHTML = originalHtml;
     btn.disabled  = false;
   }
 };
 
 window.doLogout = async () => {
   clearInterval(pollTimer);
+  await initMsal();
   await msalInstance.logoutRedirect({ postLogoutRedirectUri: window.location.href });
 };
 
@@ -1375,6 +1407,10 @@ window.showTab=t=>{
     }
 
     await initMsal();
+
+    if (!msalInstance || typeof msalInstance.handleRedirectPromise !== 'function') {
+      throw new Error('MSAL não inicializou corretamente.');
+    }
 
     const redirectResp = await msalInstance.handleRedirectPromise();
     if (redirectResp && redirectResp.account) {
